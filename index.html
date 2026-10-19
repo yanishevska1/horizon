@@ -1,0 +1,1627 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Обрій — плани на роки: довгі життєві задачі на одній шкалі часу.">
+<meta property="og:title" content="Обрій">
+<meta property="og:description" content="Плани на роки: довгі життєві задачі на одній шкалі часу.">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}
+body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}
+</style>
+<title>Обрій</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-screen planner — header with scenario tabs, then a full-width board of unnamed tracks; each task is a named "snake" that can share a track with tasks before/after it */
+:root{
+  --bg:#ECEEEA; --surface:#FAFBF8; --surface-2:#F2F4EF; --fg:#1C2220; --muted:#66706B; --line:#D8DDD6; --row-alt:rgba(28,34,32,.022);
+  --grid-day:rgba(28,34,32,.05); --grid-month:rgba(28,34,32,.14); --grid-year:rgba(28,34,32,.38);
+  --past:rgba(28,34,32,.075); --accent:#3352D1; --accent-ink:#FFFFFF; --link:#7A8580; --warn:#C24A2C; --sun:#C98A12;
+  --shadow:0 10px 30px rgba(20,30,25,.14),0 2px 6px rgba(20,30,25,.08);
+  --c0:#1F8A84; --c1:#D08C22; --c2:#8A4FA8; --c3:#2F7FD0; --c4:#D45E48; --c5:#6E8B2F; --c6:#9A6B3F; --c7:#C24C7E;
+  --font-ui:'Onest',system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif;
+  --font-display:'Unbounded','Onest',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --lh:54px; --ruler-h:62px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]):not([data-ui="light"]){
+  --bg:#111418; --surface:#171B20; --surface-2:#1C2127; --fg:#E5E8EB; --muted:#949CA5; --line:#29303A; --row-alt:rgba(229,232,235,.018);
+  --grid-day:rgba(229,232,235,.045); --grid-month:rgba(229,232,235,.11); --grid-year:rgba(229,232,235,.30);
+  --past:rgba(0,0,0,.3); --accent:#7F9BFF; --accent-ink:#0F1420; --link:#7E8893; --warn:#FF8A66; --sun:#F2C35B;
+  --shadow:0 12px 34px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.35);
+  --c0:#4FC7BE; --c1:#F0B458; --c2:#BC8BD8; --c3:#6CAEF0; --c4:#F08B75; --c5:#A6C45E; --c6:#D5A574; --c7:#EC84B0;
+  color-scheme:dark}}
+:root[data-theme="dark"]:not([data-ui="light"]),:root[data-ui="dark"]{
+  --bg:#111418; --surface:#171B20; --surface-2:#1C2127; --fg:#E5E8EB; --muted:#949CA5; --line:#29303A; --row-alt:rgba(229,232,235,.018);
+  --grid-day:rgba(229,232,235,.045); --grid-month:rgba(229,232,235,.11); --grid-year:rgba(229,232,235,.30);
+  --past:rgba(0,0,0,.3); --accent:#7F9BFF; --accent-ink:#0F1420; --link:#7E8893; --warn:#FF8A66; --sun:#F2C35B;
+  --shadow:0 12px 34px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.35);
+  --c0:#4FC7BE; --c1:#F0B458; --c2:#BC8BD8; --c3:#6CAEF0; --c4:#F08B75; --c5:#A6C45E; --c6:#D5A574; --c7:#EC84B0;
+  color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;overflow:hidden}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{height:100%;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+.brand{font-family:var(--font-display);font-weight:600;font-size:15px;letter-spacing:.01em;white-space:nowrap;display:flex;align-items:center;gap:8px}
+:lang(zh) .brand,:lang(ko) .brand,:lang(fa) .brand{font-family:var(--font-ui);font-weight:700}
+.brand svg{width:20px;height:20px;flex:none}
+.tabs{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 260px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:1px solid transparent;background:transparent;border-radius:8px;padding:6px 12px;cursor:pointer;white-space:nowrap;color:var(--muted);font-weight:500}
+.tab:hover{background:var(--surface-2);color:var(--fg)}
+.tab.on{background:var(--surface);border-color:var(--line);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.tab-add{width:30px;height:30px;border-radius:8px;border:1px dashed var(--line);background:transparent;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;flex:none}
+.tab-add:hover{color:var(--fg);border-color:var(--muted)}
+.tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg-ctl{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:2px}
+.seg-ctl button{border:0;background:transparent;padding:5px 9px;border-radius:7px;cursor:pointer;color:var(--muted);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.seg-ctl button:hover{color:var(--fg)}
+.seg-ctl button.on{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.theme-ctl button{display:grid;place-items:center;padding:5px 7px}
+.theme-ctl svg{width:16px;height:16px}
+.theme-ctl button.on .i-sun{color:var(--sun)}
+.theme-ctl button.on .i-moon{color:var(--accent)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.today{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.btn.add{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.add:hover{filter:brightness(1.08)}
+.icon-btn{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface);border-radius:9px;cursor:pointer;color:var(--muted)}
+.icon-btn:hover{color:var(--fg);border-color:var(--muted)}
+.icon-btn svg{width:16px;height:16px}
+.lang{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 26px 6px 10px;cursor:pointer;font-size:13px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:right 12px center,right 8px center;background-size:4px 4px;background-repeat:no-repeat}
+[dir="rtl"] .lang{padding:6px 10px 6px 26px;background-position:left 8px center,left 12px center}
+.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--c5)}
+.status.saving i{background:var(--c1)}
+.status.local i{background:var(--warn)}
+.status.pending i{background:var(--muted)}
+.status.device i{background:var(--warn)}
+.status.device{cursor:pointer}
+.acct{display:flex;align-items:center;gap:7px;max-width:200px}
+.acct span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct .av{width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+.acct.guest{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.consent{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:45;background:var(--surface);color:var(--fg);border:1px solid var(--line);
+  border-radius:14px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);max-width:calc(100% - 32px);font-size:13px;flex-wrap:wrap}
+.consent .btn{padding:5px 12px}
+
+/* Board — time always runs left to right, also in right-to-left languages */
+.board{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  user-select:none;-webkit-user-select:none;touch-action:none;position:relative;direction:ltr}
+.ruler{position:relative;height:var(--ruler-h);flex:none;border-bottom:1px solid var(--line);overflow:hidden;cursor:grab;font-variant-numeric:tabular-nums;background:var(--surface-2)}
+.ruler span{position:absolute;white-space:nowrap;overflow:hidden;box-sizing:border-box}
+.ry{top:0;height:22px;line-height:22px;padding-left:8px;font-family:var(--font-display);font-size:12px;font-weight:600;border-left:1.5px solid var(--grid-year)}
+.rm{top:22px;height:20px;line-height:20px;text-align:center;font-size:12px;color:var(--muted);border-left:1px solid var(--grid-month)}
+.rd{top:42px;height:18px;line-height:18px;font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center}
+.rp{top:0;bottom:0;left:0;background:var(--past);pointer-events:none}
+.ry.past,.rm.past,.rd.past{color:var(--muted);opacity:.75}
+.seg.past,.above.past{opacity:.55}
+.rt{top:42px;height:18px;line-height:18px;transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);border-radius:9px;padding:0 8px;font-size:11px;font-weight:600;overflow:visible!important}
+
+.body{position:relative;flex:1;min-height:0}
+#grid{position:absolute;left:0;top:0;pointer-events:none}
+.scroller{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+.rows{position:relative}
+.row{position:relative;height:var(--lh);box-sizing:border-box;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent);overflow:hidden;cursor:grab}
+.row:nth-child(even){background:var(--row-alt)}
+.row.ghost{border-bottom-style:dashed;background:transparent}
+
+.seg{position:absolute;top:22px;height:24px;cursor:grab;border-radius:7px}
+.seg:hover{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 25%,transparent)}
+.seg.lifted{box-shadow:var(--shadow);z-index:3}
+.seg.follows{box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 45%,transparent)}
+.pc{position:absolute;top:0;bottom:0;box-sizing:border-box}
+.pc.solid{background:color-mix(in srgb,var(--c) 32%,var(--surface));border-top:1.5px solid var(--c);border-bottom:1.5px solid var(--c)}
+.pc.solid.first{border-left:1.5px solid var(--c)}
+.pc.solid.last{border-right:1.5px solid var(--c)}
+.pc.dash{
+  background:
+    linear-gradient(90deg,var(--c) 0 9px,transparent 9px 13px,var(--c) 13px 15px,transparent 15px 19px) 0 0/19px 2px repeat-x,
+    linear-gradient(90deg,var(--c) 0 9px,transparent 9px 13px,var(--c) 13px 15px,transparent 15px 19px) 0 100%/19px 2px repeat-x,
+    color-mix(in srgb,var(--c) 9%,transparent)}
+.pc.dash.first{border-left:1.5px dotted var(--c)}
+.pc.dash.last{border-right:1.5px dotted var(--c)}
+.pc.first{border-top-left-radius:7px;border-bottom-left-radius:7px}
+.pc.last{border-top-right-radius:7px;border-bottom-right-radius:7px}
+.seg .txt{position:absolute;top:0;bottom:0;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;pointer-events:none;color:var(--fg)}
+.seg .txt b{font-weight:600;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;unicode-bidi:plaintext}
+.seg .txt em{font-style:normal;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.above{position:absolute;top:4px;height:16px;line-height:16px;font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:color-mix(in srgb,var(--c) 70%,var(--fg));cursor:grab;padding-right:2px;unicode-bidi:plaintext}
+.above::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--c);margin-right:5px;vertical-align:1px}
+.h{position:absolute;top:-3px;bottom:-3px;width:12px;cursor:ew-resize;z-index:2}
+.h-l{left:-5px}.h-r{right:-5px}
+.h-m{width:14px;margin-left:-7px;cursor:col-resize}
+.h-m::after{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;border-radius:1px;background:var(--c);opacity:0;transition:opacity .15s}
+.seg:hover .h-m::after{opacity:.9}
+.h-l::after,.h-r::after{content:"";position:absolute;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--c);opacity:0;transition:opacity .15s}
+.h-l::after{left:4px}.h-r::after{right:4px}
+.seg:hover .h-l::after,.seg:hover .h-r::after{opacity:.8}
+.board.linking .seg,.board.linking .above{cursor:crosshair}
+.seg.src{box-shadow:0 0 0 3px var(--accent)}
+.edge{position:absolute;top:22px;height:24px;max-width:42%;display:flex;align-items:center;gap:4px;padding:0 9px;border-radius:12px;cursor:pointer;
+  border:1px solid color-mix(in srgb,var(--c) 45%,var(--line));background:var(--surface);color:var(--fg);font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;z-index:4;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.edge span{overflow:hidden;text-overflow:ellipsis;unicode-bidi:plaintext}
+.edge i{font-style:normal;color:var(--c);font-weight:700}
+.edge.el{left:6px}.edge.er{right:6px}
+.edge:hover{border-color:var(--c)}
+.empty{position:absolute;left:0;right:0;top:36px;text-align:center;color:var(--muted);pointer-events:none;padding:0 16px}
+.empty strong{display:block;color:var(--fg);font-size:15px;margin-bottom:4px}
+#links{position:absolute;left:0;top:0;pointer-events:none;overflow:hidden}
+#links path{fill:none;stroke:var(--link);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+#links path.bad{stroke:var(--warn);stroke-dasharray:4 3}
+#links .ah{fill:var(--link)} #links .ah-bad{fill:var(--warn)}
+
+/* Floating UI */
+.menu{position:fixed;z-index:50;min-width:230px;max-width:min(340px,calc(100vw - 16px));background:var(--surface);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);padding:5px;display:flex;flex-direction:column}
+.menu .mh{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 10px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu button{border:0;background:transparent;text-align:start;padding:8px 10px;border-radius:7px;cursor:pointer;display:flex;gap:10px;align-items:center}
+.menu button:hover,.menu button:focus-visible{background:var(--surface-2)}
+.menu button:disabled{color:var(--muted);cursor:default;background:transparent}
+.menu button.danger{color:var(--warn)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+.tip{position:fixed;z-index:40;pointer-events:none;background:var(--fg);color:var(--surface);font-family:var(--font-mono);font-size:11px;padding:5px 8px;border-radius:6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.editor{position:fixed;z-index:60;font:600 13px var(--font-ui);color:var(--fg);background:var(--surface);border:1.5px solid var(--accent);border-radius:7px;padding:0 8px;box-sizing:border-box;outline:none;box-shadow:var(--shadow);unicode-bidi:plaintext}
+.chip{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--fg);color:var(--surface);border-radius:20px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);max-width:calc(100% - 32px);font-size:13px}
+.chip span{unicode-bidi:plaintext}
+.chip button{border:0;background:color-mix(in srgb,var(--surface) 18%,transparent);color:inherit;border-radius:14px;padding:5px 12px;cursor:pointer;font-weight:600;white-space:nowrap}
+.modal{position:fixed;inset:0;z-index:70;background:rgba(10,14,12,.35);display:grid;place-items:center;padding:16px}
+.dialog{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;width:min(380px,100%);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 32px);overflow:auto}
+.dialog h2{margin:0;font-family:var(--font-display);font-size:16px;font-weight:600}
+:lang(zh) .dialog h2,:lang(ko) .dialog h2,:lang(fa) .dialog h2{font-family:var(--font-ui);font-weight:700}
+.dialog .sub{margin:-6px 0 0;color:var(--muted);font-size:13px}
+.dialog label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);font-weight:500}
+.dialog input,.dialog select{font:14px var(--font-mono);color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.dialog select{font-family:var(--font-ui);font-size:13px;padding:8px 6px}
+.dialog .err{margin:0;color:var(--warn);font-size:13px}
+.dialog fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.dialog legend{font-size:12px;color:var(--muted);font-weight:500;padding:0;margin-bottom:5px}
+.pieces{display:flex;flex-direction:column;gap:6px}
+.pr{display:grid;grid-template-columns:minmax(0,1fr) 118px 30px;gap:6px;align-items:center}
+.pr .from{font-size:13px;color:var(--muted);padding-inline-start:2px}
+.pr input{min-width:0}
+.pr .rm{width:30px;height:34px;border:0;background:transparent;color:var(--muted);cursor:pointer;border-radius:7px;font-size:16px}
+.pr .rm:hover{background:var(--surface-2);color:var(--warn)}
+.add-piece{align-self:flex-start;border:0;background:transparent;color:var(--accent);cursor:pointer;padding:4px 2px;font-weight:500;font-size:13px}
+.dialog .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.help{position:fixed;z-index:55;width:min(380px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px}
+.help h3{margin:0 0 8px;font-size:13px;font-weight:600}
+.help dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px}
+.help dt{font-family:var(--font-mono);font-size:11px;color:var(--muted);padding-top:2px;white-space:nowrap}
+.help dd{margin:0}
+@media (max-width:640px){
+  .brand span{display:none}
+  .tools{width:100%;justify-content:space-between}
+  .status span{display:none}
+  .h{width:16px}.h-l{left:-7px}.h-r{right:-7px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1" y="4" width="11" height="3" rx="1.5" fill="var(--c0)"/><rect x="6" y="9" width="12" height="3" rx="1.5" fill="var(--c3)"/><rect x="3" y="14" width="8" height="3" rx="1.5" fill="none" stroke="var(--c1)" stroke-width="1.2" stroke-dasharray="3 1.5 1 1.5"/></svg><span data-t="appName">Обрій</span></div>
+    <nav class="tabs" id="tabs"></nav>
+    <div class="tools">
+      <button class="btn add" id="addBtn" data-t="addTask">+ Задача</button>
+      <div class="seg-ctl" id="zoom" role="group">
+        <button data-d="91" data-z="0"></button><button data-d="182" data-z="1"></button><button data-d="365" data-z="2"></button><button data-d="730" data-z="3"></button><button data-d="1826" data-z="4"></button>
+      </div>
+      <button class="btn today" id="todayBtn" data-t="today">Сьогодні</button>
+      <div class="status pending" id="status"><i></i><span></span></div>
+      <select class="lang" id="lang"></select>
+      <div class="seg-ctl theme-ctl" role="group">
+        <button id="thLight"><svg class="i-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1"/></svg></button>
+        <button id="thDark"><svg class="i-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z" stroke-linejoin="round"/></svg></button>
+      </div>
+      <button class="btn acct" id="acctBtn" hidden></button>
+      <button class="icon-btn" id="dataBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="3.8" rx="5.2" ry="2"/><path d="M2.8 3.8v8.4c0 1.1 2.3 2 5.2 2s5.2-.9 5.2-2V3.8M2.8 8c0 1.1 2.3 2 5.2 2s5.2-.9 5.2-2"/></svg></button>
+      <button class="icon-btn" id="helpBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".5" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <section class="board" id="board">
+    <div class="ruler" id="ruler"></div>
+    <div class="body" id="body">
+      <canvas id="grid"></canvas>
+      <div class="scroller" id="scroller"><div class="rows" id="rows"></div></div>
+    </div>
+  </section>
+</div>
+
+<div class="menu" id="menu" hidden role="menu"></div>
+<div class="tip" id="tip" hidden></div>
+<div class="help" id="help" hidden><h3 data-t="helpTitle"></h3><dl id="helpList"></dl></div>
+<div class="consent" id="consent" hidden><span data-t="consentText"></span><button type="button" class="btn primary" id="consentYes" data-t="consentYes"></button><button type="button" class="btn" id="consentNo" data-t="consentNo"></button></div>
+<div class="modal" id="emailModal" hidden>
+  <form class="dialog" id="emailForm" novalidate>
+    <h2 id="emailTitle"></h2>
+    <p class="sub" id="emailSub"></p>
+    <label><span data-t="emailLabel"></span><input type="email" id="emailInput" autocomplete="email" required></label>
+    <p class="err" id="emailErr" hidden></p>
+    <div class="actions"><button type="button" class="btn" id="emailCancel" data-t="cancel"></button><button type="submit" class="btn primary" id="emailSubmit"></button></div>
+  </form>
+</div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<div class="modal" id="modal" hidden>
+  <form class="dialog" id="datesForm" novalidate>
+    <h2 data-t="dlgTitle"></h2>
+    <p class="sub" id="dlgName"></p>
+    <label><span data-t="start"></span><input type="date" id="fStart" required></label>
+    <label><span data-t="end"></span><input type="date" id="fEnd" required></label>
+    <fieldset><legend data-t="lineLook"></legend><div class="pieces" id="fPieces"></div>
+      <button type="button" class="add-piece" id="fAddPiece" data-t="addStyle"></button></fieldset>
+    <p class="err" id="fErr" hidden></p>
+    <div class="actions"><button type="button" class="btn" id="fCancel" data-t="cancel"></button><button type="submit" class="btn primary" data-t="save"></button></div>
+  </form>
+</div>
+
+<script>
+const I18N = {
+en: {
+  signIn:"Sign in", signInGoogle:"Sign in with Google", signInEmail:"Sign in with email", signInWhy:"So your plans are never lost and appear on all your devices", emailLabel:"Your email", emailSend:"Send link", emailSent:e=>`We sent a sign-in link to ${e}. Open it on this device.`, emailConfirm:"Confirm the email the link was sent to", signedInAs:e=>`Signed in as ${e}`, signOut:"Sign out", signInFailed:"Couldn’t sign in. Please try again.", tMerged:"Plans from this device were added as separate tabs", stDevice:"This device only", stDeviceTitle:"Sign in so you don’t lose your plans", consentText:"Allow anonymous visit statistics?", consentYes:"Yes", consentNo:"No", acctAria:"Account",
+  name:'English', appName:'Horizon', tabsAria:'Scenarios', newOrCopy:'New or copy', addTask:'+ Task',
+  z:['3 mo','6 mo','1 yr','2 yrs','5 yrs'], today:'Today', todayPill:'today',
+  stSaving:'Saving…', stSaved:'Saved', stLocal:'This browser only',
+  stLocalTitle:'Your data is stored only in this browser', stCloudTitle:'Your data is saved to your account',
+  helpAria:'Tips', themeLight:'Light theme', themeDark:'Dark theme', langAria:'Language', dataAria:'Data and backups',
+  helpTitle:'How to use the timeline',
+  help:[
+    ['2× click','a bar or its name — rename the task'],
+    ['2× click','empty space — a new task right there'],
+    ['drag','a bar sideways — new dates; up or down — another track'],
+    ['drag an edge','change the length; the mark inside — where the line turns dashed or solid again'],
+    ['Shift + drag','move all periods of the task together'],
+    ['Alt + drag','move without the linked tasks that follow'],
+    ['right click','dates, dashed line, break, another period, links, delete (on a phone — long press)'],
+    ['‹ name ›','at the edge of a track — a task off screen; click to show it'],
+    ['Ctrl/⌘ + wheel','zoom; on a phone — pinch'],
+    ['Ctrl/⌘ + Z','undo the last action']],
+  dlgTitle:'Period dates', start:'Start', end:'End', lineLook:'Line style', fromStart:'from the start', solid:'solid', dashed:'dashed',
+  addStyle:'+ Style change', cancel:'Cancel', save:'Save',
+  errDates:'Enter a start and an end date.', errOrder:'The end can’t be before the start.', errStyle:'Each style change must be after the start and no later than the end.',
+  styleDateAria:'From date', removeStyleAria:'Remove style change',
+  mainPlan:'Main plan', scenarioN:n=>`Scenario ${n}`, newTask:'New task', variant:(b,n)=>`${b} · option ${n}`,
+  names:{cert:"Certificate", diploma:"Diploma / certificate", license:"Driver’s license", jobSearch:"Job search", newJob:"New job", buyCar:"Buy a car", hobby:"Hobby", move:"Moving to my own place", finance:"Financial stability", newTask:"New task"}, exampleTab:'Example plan',
+  emptyTitle:'Nothing here yet', emptyText:'Press “+ Task” or double-click anywhere on the timeline',
+  mRename:'Rename', mDuplicate:'Duplicate as an option', mDeleteScenario:'Delete scenario', newScenario:'New scenario',
+  emptyTimeline:'Empty timeline', copyOf:n=>`Copy of “${n}”`,
+  mDates:'Set dates…', mExtDash:'Extend with a dashed line', mExtSolid:'Extend with a solid line',
+  mDashFrom:d=>`Dashed from ${d}`, mSolidFrom:d=>`Solid from ${d}`, mPieceDash:'Make this part dashed', mPieceSolid:'Make this part solid',
+  mAllSolid:'Whole line solid', mAllDash:'Whole line dashed', mBreak:d=>`Break from ${d}`, mAddPeriod:'Add another period',
+  mLink:'Link to the next step', mUnlink:'Remove links', mDelPeriod:'Delete this period', mDelTask:'Delete task', mNewTaskFrom:d=>`New task from ${d}`,
+  tScenarioDeleted:n=>`Scenario “${n}” deleted`, tTaskDeleted:n=>`Task “${n}” deleted`, tPeriodDeleted:'Period deleted', tBreakAdded:'Break added',
+  undo:'Undo', linkPick:'Choose the task that comes after this one',
+  tipStyleFrom:d=>`style changes from ${d}`, withDeps:n=>` · with ${n} linked`,
+  days:(n,f)=>`${f} ${n===1?'day':'days'}`,
+  allUncertain:' · all uncertain', dashedList:' · dashed: ',
+  dExport:'Save a copy to a file', dImport:'Restore from a file…', dAutoHead:'Automatic copies', dAuto:d=>`State on ${d}`, dNoAuto:'No automatic copies yet',
+  tExported:'Copy saved', tImported:'Data restored from the file', tAutoRestored:d=>`Restored the state from ${d}`,
+  tBadFile:'This file doesn’t look like a timeline copy',
+  tLocalWarn:'You’re not signed in, so changes are kept only in this browser. Save a copy to a file.',
+  tCopied:'Data copied — paste it into a text file to keep it', tTooBig:'Too much data to save — delete some old scenarios'
+},
+uk: {
+  signIn:"Увійти", signInGoogle:"Увійти через Google", signInEmail:"Увійти через пошту", signInWhy:"Щоб плани не загубилися і були на всіх ваших пристроях", emailLabel:"Ваша пошта", emailSend:"Надіслати посилання", emailSent:e=>`Посилання для входу надіслано на ${e}. Відкрийте його на цьому пристрої.`, emailConfirm:"Підтвердьте пошту, на яку прийшло посилання", signedInAs:e=>`Ви ввійшли як ${e}`, signOut:"Вийти", signInFailed:"Не вдалося ввійти. Спробуйте ще раз.", tMerged:"Плани з цього пристрою додано окремими вкладками", stDevice:"Лише на цьому пристрої", stDeviceTitle:"Увійдіть, щоб не втратити свої плани", consentText:"Дозволити анонімну статистику відвідувань?", consentYes:"Так", consentNo:"Ні", acctAria:"Акаунт",
+  name:'Українська', appName:'Обрій', tabsAria:'Сценарії', newOrCopy:'Новий або копія', addTask:'+ Задача',
+  z:['3 міс','6 міс','1 рік','2 роки','5 років'], today:'Сьогодні', todayPill:'сьогодні',
+  stSaving:'Зберігаю…', stSaved:'Збережено', stLocal:'Лише в цьому браузері',
+  stLocalTitle:'Дані зберігаються лише в цьому браузері', stCloudTitle:'Дані зберігаються у вашому акаунті',
+  helpAria:'Підказки', themeLight:'Світла тема', themeDark:'Темна тема', langAria:'Мова', dataAria:'Дані та копії',
+  helpTitle:'Як працювати з таймлайном',
+  help:[
+    ['2× клік','по змійці або її назві — перейменувати задачу'],
+    ['2× клік','по порожньому місцю — нова задача саме тут'],
+    ['тягнути','змійку вбік — інші дати; вгору чи вниз — на іншу доріжку'],
+    ['за край','змінити довжину; позначка всередині — місце, де лінія стає пунктиром або знову суцільною'],
+    ['Shift + тягнути','зсунути всі періоди задачі разом'],
+    ['Alt + тягнути','посунути без пов’язаних задач, що йдуть далі'],
+    ['права кнопка','дати, пунктир, перерва, ще один період, зв’язок, видалення (на телефоні — довгий дотик)'],
+    ['‹ назва ›','на краю доріжки — задача за межами екрана, клік показує її'],
+    ['Ctrl/⌘ + колесо','масштаб; на телефоні — щипок'],
+    ['Ctrl/⌘ + Z','скасувати останню дію']],
+  dlgTitle:'Дати періоду', start:'Початок', end:'Кінець', lineLook:'Вигляд лінії', fromStart:'від початку', solid:'суцільна', dashed:'пунктир',
+  addStyle:'+ Зміна стилю', cancel:'Скасувати', save:'Зберегти',
+  errDates:'Вкажіть дату початку і кінця.', errOrder:'Кінець має бути не раніше за початок.', errStyle:'Кожна зміна стилю має бути після початку і не пізніше за кінець.',
+  styleDateAria:'З дати', removeStyleAria:'Прибрати зміну стилю',
+  mainPlan:'Основний план', scenarioN:n=>`Сценарій ${n}`, newTask:'Нова задача', variant:(b,n)=>`${b} · варіант ${n}`,
+  names:{cert:"Сертифікат", diploma:"Диплом / сертифікат", license:"Водійські права", jobSearch:"Пошук роботи", newJob:"Нова робота", buyCar:"Купити авто", hobby:"Хобі", move:"Переїзд в окреме житло", finance:"Фінансова стабільність", newTask:"Нова задача"}, exampleTab:'Приклад плану',
+  emptyTitle:'Тут поки порожньо', emptyText:'Натисніть «+ Задача» або двічі клацніть будь-де на таймлайні',
+  mRename:'Перейменувати', mDuplicate:'Дублювати як варіант', mDeleteScenario:'Видалити сценарій', newScenario:'Новий сценарій',
+  emptyTimeline:'Порожній таймлайн', copyOf:n=>`Копія «${n}»`,
+  mDates:'Задати дати…', mExtDash:'Продовжити пунктиром', mExtSolid:'Продовжити суцільною лінією',
+  mDashFrom:d=>`Пунктир з ${d}`, mSolidFrom:d=>`Суцільна з ${d}`, mPieceDash:'Ця частина — пунктир', mPieceSolid:'Ця частина — суцільна',
+  mAllSolid:'Уся лінія суцільна', mAllDash:'Уся лінія пунктиром', mBreak:d=>`Перерва з ${d}`, mAddPeriod:'Додати ще один період',
+  mLink:'Зв’язати з наступним кроком', mUnlink:'Прибрати зв’язки', mDelPeriod:'Видалити цей період', mDelTask:'Видалити задачу', mNewTaskFrom:d=>`Нова задача з ${d}`,
+  tScenarioDeleted:n=>`Сценарій «${n}» видалено`, tTaskDeleted:n=>`Задачу «${n}» видалено`, tPeriodDeleted:'Період видалено', tBreakAdded:'Перерву додано',
+  undo:'Повернути', linkPick:'Оберіть задачу, яка йде після цієї',
+  tipStyleFrom:d=>`зміна стилю з ${d}`, withDeps:n=>` · і пов’язаних: ${n}`,
+  days:(n,f)=>{ const a=n%100, b=n%10; return `${f} ${(a>10&&a<20)?'днів':b===1?'день':(b>=2&&b<=4)?'дні':'днів'}`; },
+  allUncertain:' · уся непевна', dashedList:' · пунктир: ',
+  dExport:'Зберегти копію у файл', dImport:'Відновити з файлу…', dAutoHead:'Автокопії', dAuto:d=>`Стан на ${d}`, dNoAuto:'Автокопій ще немає',
+  tExported:'Копію збережено', tImported:'Дані відновлено з файлу', tAutoRestored:d=>`Відновлено стан на ${d}`,
+  tBadFile:'Цей файл не схожий на копію таймлайну',
+  tLocalWarn:'Ви не ввійшли в акаунт, тому зміни зберігаються лише в цьому браузері. Збережіть копію у файл.',
+  tCopied:'Дані скопійовано — вставте їх у текстовий файл', tTooBig:'Забагато даних для збереження — видаліть кілька старих сценаріїв'
+},
+es: {
+  signIn:"Iniciar sesión", signInGoogle:"Iniciar sesión con Google", signInEmail:"Iniciar sesión con correo", signInWhy:"Para que tus planes no se pierdan y estén en todos tus dispositivos", emailLabel:"Tu correo", emailSend:"Enviar enlace", emailSent:e=>`Enviamos un enlace de acceso a ${e}. Ábrelo en este dispositivo.`, emailConfirm:"Confirma el correo al que llegó el enlace", signedInAs:e=>`Sesión iniciada como ${e}`, signOut:"Cerrar sesión", signInFailed:"No se pudo iniciar sesión. Inténtalo de nuevo.", tMerged:"Los planes de este dispositivo se añadieron como pestañas aparte", stDevice:"Solo en este dispositivo", stDeviceTitle:"Inicia sesión para no perder tus planes", consentText:"¿Permitir estadísticas anónimas de visitas?", consentYes:"Sí", consentNo:"No", acctAria:"Cuenta",
+  name:'Español', appName:'Horizonte', tabsAria:'Escenarios', newOrCopy:'Nuevo o copia', addTask:'+ Tarea',
+  z:['3 m','6 m','1 año','2 años','5 años'], today:'Hoy', todayPill:'hoy',
+  stSaving:'Guardando…', stSaved:'Guardado', stLocal:'Solo en este navegador',
+  stLocalTitle:'Tus datos se guardan solo en este navegador', stCloudTitle:'Tus datos se guardan en tu cuenta',
+  helpAria:'Ayuda', themeLight:'Tema claro', themeDark:'Tema oscuro', langAria:'Idioma', dataAria:'Datos y copias',
+  helpTitle:'Cómo usar la línea de tiempo',
+  help:[
+    ['2× clic','en una barra o su nombre — cambiar el nombre'],
+    ['2× clic','en un espacio vacío — nueva tarea justo ahí'],
+    ['arrastrar','la barra a los lados — otras fechas; arriba o abajo — otra pista'],
+    ['por el borde','cambiar la duración; la marca interior — donde la línea pasa a discontinua o vuelve a ser continua'],
+    ['Shift + arrastrar','mover juntos todos los periodos de la tarea'],
+    ['Alt + arrastrar','mover sin las tareas vinculadas que siguen'],
+    ['clic derecho','fechas, línea discontinua, pausa, otro periodo, vínculos, borrar (en el móvil — mantener pulsado)'],
+    ['‹ nombre ›','en el borde de una pista — una tarea fuera de la pantalla; clic para verla'],
+    ['Ctrl/⌘ + rueda','zoom; en el móvil — pellizcar'],
+    ['Ctrl/⌘ + Z','deshacer la última acción']],
+  dlgTitle:'Fechas del periodo', start:'Inicio', end:'Fin', lineLook:'Estilo de la línea', fromStart:'desde el inicio', solid:'continua', dashed:'discontinua',
+  addStyle:'+ Cambio de estilo', cancel:'Cancelar', save:'Guardar',
+  errDates:'Indica la fecha de inicio y de fin.', errOrder:'El fin no puede ser anterior al inicio.', errStyle:'Cada cambio de estilo debe estar después del inicio y no más tarde del fin.',
+  styleDateAria:'Desde la fecha', removeStyleAria:'Quitar cambio de estilo',
+  mainPlan:'Plan principal', scenarioN:n=>`Escenario ${n}`, newTask:'Nueva tarea', variant:(b,n)=>`${b} · opción ${n}`,
+  names:{cert:"Certificado", diploma:"Diploma / certificado", license:"Carné de conducir", jobSearch:"Búsqueda de trabajo", newJob:"Nuevo trabajo", buyCar:"Comprar un coche", hobby:"Afición", move:"Mudarme a mi propia casa", finance:"Estabilidad financiera", newTask:"Nueva tarea"}, exampleTab:'Plan de ejemplo',
+  emptyTitle:'Aquí aún no hay nada', emptyText:'Pulsa «+ Tarea» o haz doble clic en cualquier parte de la línea de tiempo',
+  mRename:'Cambiar nombre', mDuplicate:'Duplicar como opción', mDeleteScenario:'Eliminar escenario', newScenario:'Nuevo escenario',
+  emptyTimeline:'Línea de tiempo vacía', copyOf:n=>`Copia de «${n}»`,
+  mDates:'Fijar fechas…', mExtDash:'Continuar con línea discontinua', mExtSolid:'Continuar con línea continua',
+  mDashFrom:d=>`Discontinua desde el ${d}`, mSolidFrom:d=>`Continua desde el ${d}`, mPieceDash:'Esta parte discontinua', mPieceSolid:'Esta parte continua',
+  mAllSolid:'Toda la línea continua', mAllDash:'Toda la línea discontinua', mBreak:d=>`Pausa desde el ${d}`, mAddPeriod:'Añadir otro periodo',
+  mLink:'Vincular con el siguiente paso', mUnlink:'Quitar vínculos', mDelPeriod:'Eliminar este periodo', mDelTask:'Eliminar tarea', mNewTaskFrom:d=>`Nueva tarea desde el ${d}`,
+  tScenarioDeleted:n=>`Escenario «${n}» eliminado`, tTaskDeleted:n=>`Tarea «${n}» eliminada`, tPeriodDeleted:'Periodo eliminado', tBreakAdded:'Pausa añadida',
+  undo:'Deshacer', linkPick:'Elige la tarea que va después de esta',
+  tipStyleFrom:d=>`el estilo cambia desde el ${d}`, withDeps:n=>` · con ${n} vinculadas`,
+  days:(n,f)=>`${f} ${n===1?'día':'días'}`,
+  allUncertain:' · todo incierto', dashedList:' · discontinua: ',
+  dExport:'Guardar una copia en un archivo', dImport:'Restaurar desde un archivo…', dAutoHead:'Copias automáticas', dAuto:d=>`Estado del ${d}`, dNoAuto:'Aún no hay copias automáticas',
+  tExported:'Copia guardada', tImported:'Datos restaurados desde el archivo', tAutoRestored:d=>`Restaurado el estado del ${d}`,
+  tBadFile:'Este archivo no parece una copia de la línea de tiempo',
+  tLocalWarn:'No has iniciado sesión, así que los cambios solo se guardan en este navegador. Guarda una copia en un archivo.',
+  tCopied:'Datos copiados: pégalos en un archivo de texto para guardarlos', tTooBig:'Demasiados datos para guardar: elimina algunos escenarios antiguos'
+},
+zh: {
+  signIn:"登录", signInGoogle:"使用 Google 登录", signInEmail:"使用邮箱登录", signInWhy:"这样你的计划不会丢失，并能在所有设备上看到", emailLabel:"你的邮箱", emailSend:"发送链接", emailSent:e=>`登录链接已发送到 ${e}。请在此设备上打开。`, emailConfirm:"请确认收到链接的邮箱", signedInAs:e=>`已登录：${e}`, signOut:"退出登录", signInFailed:"登录失败，请重试。", tMerged:"此设备上的计划已作为单独的标签页添加", stDevice:"仅存于此设备", stDeviceTitle:"登录以免丢失你的计划", consentText:"允许匿名访问统计吗？", consentYes:"允许", consentNo:"不允许", acctAria:"账户",
+  name:'中文', appName:'地平线', tabsAria:'方案', newOrCopy:'新建或复制', addTask:'+ 任务',
+  z:['3个月','6个月','1年','2年','5年'], today:'今天', todayPill:'今天',
+  stSaving:'正在保存…', stSaved:'已保存', stLocal:'仅存于此浏览器',
+  stLocalTitle:'数据只保存在此浏览器中', stCloudTitle:'数据保存在你的账户中',
+  helpAria:'帮助', themeLight:'浅色主题', themeDark:'深色主题', langAria:'语言', dataAria:'数据与备份',
+  helpTitle:'如何使用时间线',
+  help:[
+    ['双击','条形或其名称 — 重命名任务'],
+    ['双击','空白处 — 在此处新建任务'],
+    ['拖动','条形左右 — 改变日期；上下 — 换到另一条轨道'],
+    ['拖动边缘','改变时长；内部标记 — 线条变为虚线或恢复实线的位置'],
+    ['Shift + 拖动','一起移动任务的所有时段'],
+    ['Alt + 拖动','移动时不带后续的关联任务'],
+    ['右键','日期、虚线、暂停、新时段、关联、删除（手机上长按）'],
+    ['‹ 名称 ›','轨道边缘 — 屏幕外的任务，点击即可显示'],
+    ['Ctrl/⌘ + 滚轮','缩放；手机上双指捏合'],
+    ['Ctrl/⌘ + Z','撤销上一步']],
+  dlgTitle:'时段日期', start:'开始', end:'结束', lineLook:'线条样式', fromStart:'从开始', solid:'实线', dashed:'虚线',
+  addStyle:'+ 样式变化', cancel:'取消', save:'保存',
+  errDates:'请填写开始和结束日期。', errOrder:'结束日期不能早于开始日期。', errStyle:'每个样式变化都必须晚于开始，且不晚于结束。',
+  styleDateAria:'起始日期', removeStyleAria:'删除样式变化',
+  mainPlan:'主要计划', scenarioN:n=>`方案 ${n}`, newTask:'新任务', variant:(b,n)=>`${b} · 选项 ${n}`,
+  names:{cert:"证书", diploma:"毕业证 / 证书", license:"驾照", jobSearch:"找工作", newJob:"新工作", buyCar:"买车", hobby:"爱好", move:"搬进自己的住处", finance:"财务稳定", newTask:"新任务"}, exampleTab:'示例计划',
+  emptyTitle:'这里还是空的', emptyText:'点击“+ 任务”，或在时间线上任意位置双击',
+  mRename:'重命名', mDuplicate:'复制为另一选项', mDeleteScenario:'删除方案', newScenario:'新方案',
+  emptyTimeline:'空白时间线', copyOf:n=>`“${n}”的副本`,
+  mDates:'设置日期…', mExtDash:'用虚线延长', mExtSolid:'用实线延长',
+  mDashFrom:d=>`从 ${d} 起为虚线`, mSolidFrom:d=>`从 ${d} 起为实线`, mPieceDash:'这一段改为虚线', mPieceSolid:'这一段改为实线',
+  mAllSolid:'整条改为实线', mAllDash:'整条改为虚线', mBreak:d=>`从 ${d} 起暂停`, mAddPeriod:'再添加一个时段',
+  mLink:'关联到下一步', mUnlink:'移除关联', mDelPeriod:'删除这个时段', mDelTask:'删除任务', mNewTaskFrom:d=>`从 ${d} 起新建任务`,
+  tScenarioDeleted:n=>`已删除方案“${n}”`, tTaskDeleted:n=>`已删除任务“${n}”`, tPeriodDeleted:'已删除时段', tBreakAdded:'已添加暂停',
+  undo:'撤销', linkPick:'选择紧接在此之后的任务',
+  tipStyleFrom:d=>`样式从 ${d} 起变化`, withDeps:n=>` · 连同 ${n} 个关联任务`,
+  days:(n,f)=>`${f} 天`,
+  allUncertain:' · 全部不确定', dashedList:' · 虚线：',
+  dExport:'保存副本到文件', dImport:'从文件恢复…', dAutoHead:'自动备份', dAuto:d=>`${d} 的状态`, dNoAuto:'还没有自动备份',
+  tExported:'副本已保存', tImported:'已从文件恢复数据', tAutoRestored:d=>`已恢复到 ${d} 的状态`,
+  tBadFile:'此文件看起来不是时间线副本',
+  tLocalWarn:'你尚未登录，所以更改只保存在此浏览器中。请把副本保存到文件。',
+  tCopied:'数据已复制——请粘贴到文本文件中保存', tTooBig:'数据过多无法保存——请删除一些旧方案'
+},
+ko: {
+  signIn:"로그인", signInGoogle:"Google로 로그인", signInEmail:"이메일로 로그인", signInWhy:"계획을 잃지 않고 모든 기기에서 볼 수 있도록", emailLabel:"이메일 주소", emailSend:"링크 보내기", emailSent:e=>`${e}(으)로 로그인 링크를 보냈습니다. 이 기기에서 여세요.`, emailConfirm:"링크를 받은 이메일 주소를 확인하세요", signedInAs:e=>`${e}(으)로 로그인됨`, signOut:"로그아웃", signInFailed:"로그인하지 못했습니다. 다시 시도하세요.", tMerged:"이 기기의 계획을 별도 탭으로 추가했습니다", stDevice:"이 기기에만", stDeviceTitle:"계획을 잃지 않으려면 로그인하세요", consentText:"익명 방문 통계를 허용할까요?", consentYes:"예", consentNo:"아니요", acctAria:"계정",
+  name:'한국어', appName:'지평선', tabsAria:'시나리오', newOrCopy:'새로 만들기 또는 복사', addTask:'+ 할 일',
+  z:['3개월','6개월','1년','2년','5년'], today:'오늘', todayPill:'오늘',
+  stSaving:'저장 중…', stSaved:'저장됨', stLocal:'이 브라우저에만',
+  stLocalTitle:'데이터가 이 브라우저에만 저장됩니다', stCloudTitle:'데이터가 계정에 저장됩니다',
+  helpAria:'도움말', themeLight:'밝은 테마', themeDark:'어두운 테마', langAria:'언어', dataAria:'데이터 및 백업',
+  helpTitle:'타임라인 사용 방법',
+  help:[
+    ['더블 클릭','막대나 이름 — 이름 바꾸기'],
+    ['더블 클릭','빈 곳 — 바로 그곳에 새 할 일'],
+    ['드래그','막대를 옆으로 — 날짜 변경, 위아래로 — 다른 트랙으로'],
+    ['가장자리 드래그','기간 변경, 안쪽 표시 — 선이 점선이 되거나 다시 실선이 되는 지점'],
+    ['Shift + 드래그','할 일의 모든 기간을 함께 이동'],
+    ['Alt + 드래그','뒤따르는 연결된 할 일 없이 이동'],
+    ['오른쪽 클릭','날짜, 점선, 휴식, 기간 추가, 연결, 삭제 (휴대폰에서는 길게 누르기)'],
+    ['‹ 이름 ›','트랙 가장자리 — 화면 밖의 할 일, 클릭하면 보여 줌'],
+    ['Ctrl/⌘ + 휠','확대·축소, 휴대폰에서는 두 손가락으로 집기'],
+    ['Ctrl/⌘ + Z','마지막 작업 취소']],
+  dlgTitle:'기간 날짜', start:'시작', end:'끝', lineLook:'선 모양', fromStart:'처음부터', solid:'실선', dashed:'점선',
+  addStyle:'+ 모양 변경', cancel:'취소', save:'저장',
+  errDates:'시작일과 종료일을 입력하세요.', errOrder:'종료일은 시작일보다 앞설 수 없습니다.', errStyle:'모든 모양 변경은 시작일 이후, 종료일 이전이어야 합니다.',
+  styleDateAria:'시작 날짜', removeStyleAria:'모양 변경 삭제',
+  mainPlan:'기본 계획', scenarioN:n=>`시나리오 ${n}`, newTask:'새 할 일', variant:(b,n)=>`${b} · 대안 ${n}`,
+  names:{cert:"자격증", diploma:"졸업장 / 자격증", license:"운전면허", jobSearch:"구직", newJob:"새 직장", buyCar:"자동차 구입", hobby:"취미", move:"독립해서 이사", finance:"재정 안정", newTask:"새 할 일"}, exampleTab:'예시 계획',
+  emptyTitle:'아직 비어 있어요', emptyText:'“+ 할 일”을 누르거나 타임라인 아무 곳이나 더블 클릭하세요',
+  mRename:'이름 바꾸기', mDuplicate:'대안으로 복제', mDeleteScenario:'시나리오 삭제', newScenario:'새 시나리오',
+  emptyTimeline:'빈 타임라인', copyOf:n=>`“${n}” 사본`,
+  mDates:'날짜 설정…', mExtDash:'점선으로 연장', mExtSolid:'실선으로 연장',
+  mDashFrom:d=>`${d}부터 점선`, mSolidFrom:d=>`${d}부터 실선`, mPieceDash:'이 부분을 점선으로', mPieceSolid:'이 부분을 실선으로',
+  mAllSolid:'전체 실선', mAllDash:'전체 점선', mBreak:d=>`${d}부터 휴식`, mAddPeriod:'기간 하나 더 추가',
+  mLink:'다음 단계와 연결', mUnlink:'연결 삭제', mDelPeriod:'이 기간 삭제', mDelTask:'할 일 삭제', mNewTaskFrom:d=>`${d}부터 새 할 일`,
+  tScenarioDeleted:n=>`시나리오 “${n}” 삭제됨`, tTaskDeleted:n=>`할 일 “${n}” 삭제됨`, tPeriodDeleted:'기간 삭제됨', tBreakAdded:'휴식 추가됨',
+  undo:'되돌리기', linkPick:'이 다음에 오는 할 일을 선택하세요',
+  tipStyleFrom:d=>`${d}부터 모양 변경`, withDeps:n=>` · 연결된 ${n}개 포함`,
+  days:(n,f)=>`${f}일`,
+  allUncertain:' · 전체 불확실', dashedList:' · 점선: ',
+  dExport:'파일로 사본 저장', dImport:'파일에서 복원…', dAutoHead:'자동 사본', dAuto:d=>`${d} 상태`, dNoAuto:'아직 자동 사본이 없습니다',
+  tExported:'사본 저장됨', tImported:'파일에서 데이터를 복원했습니다', tAutoRestored:d=>`${d} 상태로 복원했습니다`,
+  tBadFile:'이 파일은 타임라인 사본이 아닌 것 같습니다',
+  tLocalWarn:'로그인하지 않아 변경 사항이 이 브라우저에만 저장됩니다. 파일로 사본을 저장하세요.',
+  tCopied:'데이터를 복사했습니다. 텍스트 파일에 붙여 넣어 보관하세요', tTooBig:'저장할 데이터가 너무 많습니다. 오래된 시나리오를 삭제하세요'
+},
+fa: {
+  signIn:"ورود", signInGoogle:"ورود با Google", signInEmail:"ورود با ایمیل", signInWhy:"تا برنامه‌هایتان گم نشود و در همهٔ دستگاه‌هایتان باشد", emailLabel:"ایمیل شما", emailSend:"ارسال پیوند", emailSent:e=>`پیوند ورود به ${e} فرستاده شد. آن را در همین دستگاه باز کنید.`, emailConfirm:"ایمیلی را که پیوند به آن رسیده تأیید کنید", signedInAs:e=>`وارد شده با ${e}`, signOut:"خروج", signInFailed:"ورود ممکن نشد. دوباره تلاش کنید.", tMerged:"برنامه‌های این دستگاه به‌صورت زبانه‌های جداگانه اضافه شد", stDevice:"فقط در این دستگاه", stDeviceTitle:"وارد شوید تا برنامه‌هایتان را از دست ندهید", consentText:"آمار ناشناس بازدید مجاز باشد؟", consentYes:"بله", consentNo:"خیر", acctAria:"حساب",
+  name:'فارسی', appName:'افق', tabsAria:'سناریوها', newOrCopy:'جدید یا رونوشت', addTask:'+ کار',
+  z:['۳ ماه','۶ ماه','۱ سال','۲ سال','۵ سال'], today:'امروز', todayPill:'امروز',
+  stSaving:'در حال ذخیره…', stSaved:'ذخیره شد', stLocal:'فقط در این مرورگر',
+  stLocalTitle:'داده‌ها فقط در این مرورگر ذخیره می‌شوند', stCloudTitle:'داده‌ها در حساب شما ذخیره می‌شوند',
+  helpAria:'راهنما', themeLight:'پوستهٔ روشن', themeDark:'پوستهٔ تیره', langAria:'زبان', dataAria:'داده‌ها و پشتیبان‌ها',
+  helpTitle:'نحوهٔ کار با خط زمانی',
+  help:[
+    ['دوبار کلیک','روی نوار یا نام آن — تغییر نام کار'],
+    ['دوبار کلیک','روی جای خالی — کار جدید همان‌جا'],
+    ['کشیدن','نوار به چپ و راست — تاریخ‌های دیگر؛ بالا یا پایین — مسیر دیگر'],
+    ['کشیدن لبه','تغییر طول؛ نشانهٔ داخلی — جایی که خط نقطه‌چین یا دوباره پیوسته می‌شود'],
+    ['Shift + کشیدن','جابه‌جایی همهٔ دوره‌های کار با هم'],
+    ['Alt + کشیدن','جابه‌جایی بدون کارهای وابستهٔ بعدی'],
+    ['کلیک راست','تاریخ‌ها، نقطه‌چین، وقفه، دورهٔ دیگر، پیوند، حذف (در تلفن — نگه داشتن طولانی)'],
+    ['‹ نام ›','در لبهٔ مسیر — کاری بیرون از صفحه؛ با کلیک نمایش داده می‌شود'],
+    ['Ctrl/⌘ + چرخ','بزرگ‌نمایی؛ در تلفن — با دو انگشت'],
+    ['Ctrl/⌘ + Z','واگرد آخرین کار']],
+  dlgTitle:'تاریخ‌های دوره', start:'شروع', end:'پایان', lineLook:'شکل خط', fromStart:'از ابتدا', solid:'پیوسته', dashed:'نقطه‌چین',
+  addStyle:'+ تغییر شکل', cancel:'لغو', save:'ذخیره',
+  errDates:'تاریخ شروع و پایان را وارد کنید.', errOrder:'پایان نمی‌تواند پیش از شروع باشد.', errStyle:'هر تغییر شکل باید بعد از شروع و حداکثر تا پایان باشد.',
+  styleDateAria:'از تاریخ', removeStyleAria:'حذف تغییر شکل',
+  mainPlan:'برنامهٔ اصلی', scenarioN:n=>`سناریوی ${n}`, newTask:'کار جدید', variant:(b,n)=>`${b} · گزینهٔ ${n}`,
+  names:{cert:"گواهی‌نامه", diploma:"مدرک / گواهی‌نامه", license:"گواهینامهٔ رانندگی", jobSearch:"جست‌وجوی شغل", newJob:"شغل جدید", buyCar:"خرید ماشین", hobby:"سرگرمی", move:"نقل مکان به خانهٔ خودم", finance:"ثبات مالی", newTask:"کار جدید"}, exampleTab:'برنامهٔ نمونه',
+  emptyTitle:'هنوز چیزی اینجا نیست', emptyText:'روی «+ کار» بزنید یا هر جای خط زمانی دوبار کلیک کنید',
+  mRename:'تغییر نام', mDuplicate:'رونوشت به‌عنوان گزینه', mDeleteScenario:'حذف سناریو', newScenario:'سناریوی جدید',
+  emptyTimeline:'خط زمانی خالی', copyOf:n=>`رونوشت «${n}»`,
+  mDates:'تعیین تاریخ‌ها…', mExtDash:'ادامه با نقطه‌چین', mExtSolid:'ادامه با خط پیوسته',
+  mDashFrom:d=>`نقطه‌چین از ${d}`, mSolidFrom:d=>`پیوسته از ${d}`, mPieceDash:'این بخش نقطه‌چین', mPieceSolid:'این بخش پیوسته',
+  mAllSolid:'کل خط پیوسته', mAllDash:'کل خط نقطه‌چین', mBreak:d=>`وقفه از ${d}`, mAddPeriod:'افزودن دورهٔ دیگر',
+  mLink:'پیوند به گام بعدی', mUnlink:'حذف پیوندها', mDelPeriod:'حذف این دوره', mDelTask:'حذف کار', mNewTaskFrom:d=>`کار جدید از ${d}`,
+  tScenarioDeleted:n=>`سناریوی «${n}» حذف شد`, tTaskDeleted:n=>`کار «${n}» حذف شد`, tPeriodDeleted:'دوره حذف شد', tBreakAdded:'وقفه اضافه شد',
+  undo:'واگرد', linkPick:'کاری را که بعد از این می‌آید انتخاب کنید',
+  tipStyleFrom:d=>`تغییر شکل از ${d}`, withDeps:n=>` · همراه با ${n} کار وابسته`,
+  days:(n,f)=>`${f} روز`,
+  allUncertain:' · همه نامطمئن', dashedList:' · نقطه‌چین: ',
+  dExport:'ذخیرهٔ رونوشت در فایل', dImport:'بازیابی از فایل…', dAutoHead:'رونوشت‌های خودکار', dAuto:d=>`وضعیت ${d}`, dNoAuto:'هنوز رونوشت خودکاری نیست',
+  tExported:'رونوشت ذخیره شد', tImported:'داده‌ها از فایل بازیابی شد', tAutoRestored:d=>`وضعیت ${d} بازیابی شد`,
+  tBadFile:'این فایل شبیه رونوشت خط زمانی نیست',
+  tLocalWarn:'وارد حساب نشده‌اید، پس تغییرات فقط در این مرورگر می‌ماند. رونوشتی در فایل ذخیره کنید.',
+  tCopied:'داده‌ها کپی شد؛ آن را در یک فایل متنی بچسبانید', tTooBig:'داده‌ها برای ذخیره زیاد است؛ چند سناریوی قدیمی را حذف کنید'
+}
+};
+
+(() => {
+'use strict';
+/* ---------- language ---------- */
+const LANGS = ['en','uk','es','zh','ko','fa'];
+const LOCALE = {en:'en-US', uk:'uk-UA', es:'es-ES', zh:'zh-CN', ko:'ko-KR', fa:'fa-IR-u-ca-gregory-nu-arabext'};
+const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch {} };
+const LS_DATA = 'life-timeline-data-v1', LS_PREF = 'life-timeline-prefs-v1';
+const prefs = (() => { try { return JSON.parse(lsGet(LS_PREF)) || {}; } catch { return {}; } })();
+function detectLang(){
+  const list = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || 'en'];
+  for (const tag of list){ const base = String(tag).toLowerCase().split('-')[0]; if (LANGS.includes(base)) return base; }
+  return 'en';
+}
+let lang = LANGS.includes(prefs.lang) ? prefs.lang : detectLang();
+let T = I18N[lang];
+
+/* ---------- dates (integer day numbers, UTC-based, end is exclusive) ---------- */
+const DAY = 86400000;
+const UK_MON = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+const dn = (y,m,d) => Math.round(Date.UTC(y,m,d)/DAY);
+const dd = n => { const t = new Date(n*DAY); return {y:t.getUTCFullYear(), m:t.getUTCMonth(), d:t.getUTCDate()}; };
+const _now = new Date();
+const TODAY = dn(_now.getFullYear(), _now.getMonth(), _now.getDate());
+const iso = n => { const {y,m,d} = dd(n); return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; };
+const fromIso = s => { const p = (s||'').split('-').map(Number); return p.length===3 && p.every(Number.isFinite) ? dn(p[0],p[1]-1,p[2]) : null; };
+let F = null;
+function makeFormats(){
+  const loc = LOCALE[lang], mk = o => new Intl.DateTimeFormat(loc, {timeZone:'UTC', ...o});
+  const fDay = mk({day:'numeric', month:'short', year:'numeric'}), fMY = mk({month:'short', year:'numeric'}), fMS = mk({month:'short'}), fML = mk({month:'long'});
+  const nf = new Intl.NumberFormat(loc, {useGrouping:false});
+  const months = [...Array(12)].map((_,m) => new Date(Date.UTC(2021,m,1)));
+  F = {
+    day: n => { if (lang === 'uk'){ const {y,m,d} = dd(n); return `${d} ${UK_MON[m]} ${y}`; } return fDay.format(new Date(n*DAY)); },
+    my: n => { if (lang === 'uk'){ const {y,m} = dd(n); return `${UK_MON[m]} ${y}`; } return fMY.format(new Date(n*DAY)); },
+    mShort: lang === 'uk' ? UK_MON : months.map(d => fMS.format(d).replace(/\.$/,'')),
+    mLong: months.map(d => fML.format(d)),
+    num: x => nf.format(x),
+  };
+  F.mInit = F.mShort.map(s => [...s][0]);
+}
+makeFormats();
+const fmt = n => F.day(n), fmtM = n => F.my(n);
+const daysText = n => T.days(n, F.num(n));
+const uid = () => Math.random().toString(36).slice(2,10);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const BAR_TOP = 22, BAR_H = 24;
+
+/* ---------- line style of one period ----------
+   Style flips at every day in `m`; `d` = the first piece is dashed. So solid → dashed → solid is m:[a,b], d:false. */
+function fromK(s, e, k){ return k >= e ? {m:[], d:false} : k <= s ? {m:[], d:true} : {m:[k], d:false}; }
+function fixMarks(seg){
+  let m = (Array.isArray(seg.m) ? seg.m : []).filter(Number.isFinite).map(Math.round).sort((a,b) => a-b), d = !!seg.d;
+  while (m.length && m[0] <= seg.s){ m.shift(); d = !d; }
+  while (m.length && m[m.length-1] >= seg.e) m.pop();
+  const out = []; for (const x of m){ if (out.length && out[out.length-1] === x) out.pop(); else out.push(x); }
+  seg.m = out; seg.d = d;
+}
+function pieces(seg){ const b = [seg.s, ...seg.m, seg.e]; return b.slice(0,-1).map((a,i) => ({a, b:b[i+1], dash:(i % 2 === 1) !== seg.d})); }
+function setPieces(seg, list){
+  const merged = [];
+  for (const p of list){ if (p.b <= p.a) continue; const l = merged[merged.length-1]; if (l && l.dash === p.dash) l.b = p.b; else merged.push({...p}); }
+  if (!merged.length){ seg.m = []; seg.d = false; return; }
+  seg.d = merged[0].dash; seg.m = merged.slice(1).map(p => p.a);
+}
+function styleText(seg){
+  const ps = pieces(seg), dashed = ps.filter(p => p.dash);
+  if (!dashed.length) return '';
+  if (dashed.length === ps.length) return T.allUncertain;
+  return T.dashedList + dashed.map(p => `${fmt(p.a)} – ${fmt(p.b-1)}`).join(', ');
+}
+const copySeg = s => ({...s, m:[...s.m]});
+
+/* ---------- state ----------
+   tab = { id, name, items:[{ id, name, c, row, segs:[{id, s, e, m, d}] }], links:[{a:segId, b:segId}] }
+   row = unnamed track; several items share a row if their periods don't overlap. Several segs = one task with breaks. */
+const MIN_DAYS = 45, MAX_DAYS = 3653;
+/* Default names are stored with a key so they follow the interface language; a user rename clears the key. */
+const nm = it => (it.k && T.names[it.k]) || it.name;
+const tabBase = t => t.k === 'scenario' ? T.scenarioN(F.num(t.n || 1)) : (T[t.k] || t.name);
+const tn = t => t.k ? (t.v ? T.variant(tabBase(t), F.num(t.v)) : tabBase(t)) : t.name;
+function detectItemKey(name){ for (const L of LANGS) for (const [k,v] of Object.entries(I18N[L].names)) if (v === name) return k; return null; }
+function detectTabKey(name){
+  for (const L of LANGS){
+    const D = I18N[L], bases = [{k:'mainPlan', s:D.mainPlan}, {k:'exampleTab', s:D.exampleTab}];
+    for (let n=1; n<=40; n++) bases.push({k:'scenario', n, s:D.scenarioN(n)});
+    for (const b of bases){
+      if (b.s === name) return {k:b.k, n:b.n};
+      for (let v=2; v<=30; v++) if (D.variant(b.s, v) === name) return {k:b.k, n:b.n, v};
+    }
+  }
+  return null;
+}
+/* Default plan for a first visit — dated relative to the current month so it never looks stale. */
+function sampleTab(key){
+  const {y, m} = dd(TODAY), M = k => dn(y, m + k, 1);
+  const mk = (k,c,row,segs) => ({id:uid(), k, name:T.names[k], c, row, segs:segs.map(([s,e,kk]) => ({id:uid(), s, e, ...fromK(s,e,kk)}))});
+  const diploma = mk('diploma',0,0,[[M(-1),M(5),M(4)]]), license = mk('license',3,1,[[M(0),M(3),M(2)]]), search = mk('jobSearch',1,1,[[M(5),M(8),M(7)]]),
+        job = mk('newJob',2,0,[[M(8),M(32),M(20)]]), car = mk('buyCar',4,1,[[M(16),M(18),M(16)]]), hobby = mk('hobby',7,2,[[M(5),M(36),M(24)]]);
+  const f = it => it.segs[0].id;
+  return {id:uid(), k:key, name:T[key], items:[diploma, license, search, job, car, hobby],
+    links:[{a:f(diploma),b:f(search)},{a:f(search),b:f(job)},{a:f(job),b:f(car)}]};
+}
+function sample(){ return {tabs:[sampleTab('mainPlan')], active:null, updatedAt:0}; }
+function compact(t){
+  const used = [...new Set(t.items.map(i => i.row))].sort((a,b) => a-b), map = new Map(used.map((r,i) => [r,i]));
+  t.items.forEach(i => i.row = map.get(i.row));
+}
+function isTimeline(d){ return d && Array.isArray(d.tabs) && d.tabs.length && d.tabs.every(t => t && (Array.isArray(t.items) || Array.isArray(t.rows))); }
+function normalize(d){
+  if (!isTimeline(d)) return sample();
+  d.tabs.forEach(t => {
+    t.id = t.id || uid(); t.name = String(t.name || T.scenarioN(1));
+    if (t.k === undefined){ const r = detectTabKey(t.name); if (r){ t.k = r.k; if (r.n) t.n = r.n; if (r.v) t.v = r.v; } else t.k = null; } t.links = Array.isArray(t.links) ? t.links.filter(l => l && l.a && l.b) : [];
+    if (!Array.isArray(t.items)){ t.items = (Array.isArray(t.rows) ? t.rows : []).map((r,i) => ({id:r.id||uid(), name:r.name, c:r.c, row:i, segs:r.segs||[]})); }
+    delete t.rows;
+    t.items.forEach((it,i) => {
+      it.id = it.id || uid(); it.name = String(it.name || T.newTask); if (it.k === undefined) it.k = detectItemKey(it.name); it.c = Number.isFinite(it.c) ? it.c : i%8; it.row = Number.isFinite(it.row) ? it.row : i;
+      it.segs = (Array.isArray(it.segs) ? it.segs : []).filter(s => s && Number.isFinite(s.s) && Number.isFinite(s.e));
+      it.segs.forEach(s => {
+        s.id = s.id || uid(); s.s = Math.round(s.s); s.e = Math.round(s.e); if (!(s.e > s.s)) s.e = s.s + 1;
+        if (!Array.isArray(s.m)) Object.assign(s, fromK(s.s, s.e, Number.isFinite(s.k) ? s.k : s.e));
+        delete s.k; fixMarks(s);
+      });
+      it.segs.sort((a,b) => a.s - b.s);
+    });
+    t.items = t.items.filter(it => it.segs.length);
+    compact(t);
+  });
+  if (!d.tabs.some(t => t.id === d.active)) d.active = d.tabs[0].id;
+  d.updatedAt = Number(d.updatedAt) || 0;
+  return d;
+}
+let data = normalize((() => { try { return JSON.parse(lsGet(LS_DATA)); } catch { return null; } })());
+const view = { days: clamp(prefs.days || 365, MIN_DAYS, MAX_DAYS), start: 0 };
+view.start = TODAY - view.days/2;
+if (prefs.ui === 'light' || prefs.ui === 'dark') document.documentElement.setAttribute('data-ui', prefs.ui);
+const savePrefs = () => lsSet(LS_PREF, JSON.stringify({days:Math.round(view.days), ui:document.documentElement.getAttribute('data-ui')||'', lang:prefs.lang||'', stats:prefs.stats||''}));
+
+const tab = () => data.tabs.find(t => t.id === data.active) || data.tabs[0];
+const itemById = id => tab().items.find(i => i.id === id);
+const rowCount = t => t.items.reduce((m,i) => Math.max(m, i.row + 1), 0);
+function segById(id){ for (const it of tab().items){ const s = it.segs.find(x => x.id === id); if (s) return {seg:s, item:it}; } return null; }
+function collides(t, item){
+  return t.items.some(o => o !== item && o.row === item.row && o.segs.some(a => item.segs.some(b => a.s < b.e && b.s < a.e)));
+}
+/* The task you just placed keeps its track; anything it overlaps (and the tracks below) moves one track down. */
+function settle(...items){
+  const t = tab();
+  for (const item of items) if (item && t.items.includes(item) && collides(t, item)) t.items.forEach(o => { if (o !== item && o.row >= item.row) o.row++; });
+  compact(t);
+}
+/* Linked tasks that follow (transitively), not counting the given periods themselves. */
+function followers(segIds){
+  const t = tab(), seen = new Set(segIds), q = [...segIds], out = [];
+  while (q.length){ const id = q.shift(); for (const l of t.links) if (l.a === id && !seen.has(l.b)){ seen.add(l.b); q.push(l.b); const f = segById(l.b); if (f) out.push(f); } }
+  return out;
+}
+function shiftSeg(x, q, delta){ x.s = q.s + delta; x.e = q.e + delta; x.m = q.m.map(v => v + delta); x.d = q.d; }
+function shiftFollowers(segIds, delta){
+  if (!delta) return [];
+  const fs = followers(segIds); fs.forEach(f => shiftSeg(f.seg, copySeg(f.seg), delta)); return fs.map(f => f.item);
+}
+
+/* ---------- undo + saving ---------- */
+const undoStack = [];
+function pushUndo(){ undoStack.push(JSON.stringify(data)); if (undoStack.length > 80) undoStack.shift(); }
+function undo(){ const s = undoStack.pop(); if (!s) return; data = normalize(JSON.parse(s)); persist(); renderTabs(); schedule(); }
+
+const remote = { state:'pending', store:null, ref:null, inflight:false, pending:false, timer:null, lastJson:null, backupDay:null, unsub:null, warned:false };
+let account = null;   /* filled by the account-based (github.io) build */
+const statusEl = document.getElementById('status');
+let statusKind = 'pending';
+const savedKind = () => (account && account.anonymous) ? 'device' : 'saved';
+function setStatus(kind){
+  statusKind = kind;
+  statusEl.className = 'status ' + kind;
+  statusEl.querySelector('span').textContent = kind==='pending' ? '' : kind==='saving' ? T.stSaving : kind==='saved' ? T.stSaved : kind==='device' ? T.stDevice : T.stLocal;
+  statusEl.title = kind==='local' ? T.stLocalTitle : kind==='device' ? T.stDeviceTitle : T.stCloudTitle;
+}
+function persist(){
+  data.updatedAt = Date.now();
+  if (remote.store) data.owner = remote.store.uid;
+  lsSet(LS_DATA, JSON.stringify(data));
+  if (remote.ref){ setStatus('saving'); clearTimeout(remote.timer); remote.timer = setTimeout(() => { remote.timer = null; flush(); }, 700); }
+  else if (remote.state === 'off' && !remote.warned){ remote.warned = true; toast(T.tLocalWarn); }
+}
+async function writeBackup(store){
+  if (!remote.lastJson || remote.backupDay === TODAY) return;
+  remote.backupDay = TODAY;
+  try { await store.doc(`backup-${TODAY % 7}`).set({json:remote.lastJson, day:TODAY, savedAt:Date.now()}); } catch {}
+}
+async function flush(retried){
+  const store = remote.store, ref = remote.ref;
+  if (!ref) return;
+  if (remote.inflight){ remote.pending = true; return; }
+  const json = JSON.stringify(data);
+  if (json.length > 250000){ setStatus('local'); toast(T.tTooBig); return; }
+  remote.inflight = true;
+  try {
+    await writeBackup(store);
+    await ref.set({json, updatedAt: data.updatedAt});
+    if (remote.store === store){ remote.lastJson = json; setStatus(savedKind()); }
+  } catch (err) {
+    remote.inflight = false;
+    if (err && err.code === 'unavailable' && !retried){ setTimeout(() => flush(true), 1200 + Math.random()*1200); return; }
+    setStatus('local'); return;
+  }
+  remote.inflight = false;
+  if (remote.pending){ remote.pending = false; flush(); }
+}
+function adopt(body, owner){
+  try { const d = normalize(JSON.parse(body.json)); d.updatedAt = Number(body.updatedAt) || d.updatedAt; d.owner = owner; data = d; lsSet(LS_DATA, JSON.stringify(data)); renderTabs(); schedule(); } catch {}
+}
+/* Plans made before signing in are kept: they join the account as extra tabs. */
+function mergeInto(base, extra){
+  const b = normalize(JSON.parse(JSON.stringify(base))), x = normalize(JSON.parse(JSON.stringify(extra)));
+  x.tabs.forEach(t => { if (b.tabs.some(o => o.id === t.id)) t.id = uid(); b.tabs.push(t); });
+  return b;
+}
+function disconnect(){
+  if (remote.unsub) try { remote.unsub(); } catch {}
+  clearTimeout(remote.timer);
+  Object.assign(remote, {store:null, ref:null, unsub:null, timer:null, lastJson:null, backupDay:null, inflight:false, pending:false});
+}
+/* store = { uid, doc(name) -> { get(), set(obj), onSnapshot(next, err) } } — the same shape for Claude's db and for Firestore */
+async function connect(store, opts = {}){
+  disconnect(); remote.store = store; remote.state = 'pending'; setStatus('pending');
+  if (!opts.merge && data.owner && data.owner !== store.uid){ data = normalize(null); renderTabs(); schedule(); }
+  const ref = store.doc('timeline');
+  try { const slot = await store.doc(`backup-${TODAY % 7}`).get(); if (slot.exists && slot.data().day === TODAY) remote.backupDay = TODAY; } catch {}
+  if (remote.store !== store) return;
+  let first = true;
+  remote.unsub = ref.onSnapshot(snap => {
+    if (remote.store !== store) return;
+    const body = snap.exists ? snap.data() : null;
+    if (first){
+      first = false; remote.ref = ref; remote.state = 'on';
+      if (body && body.json) remote.lastJson = body.json;
+      if (opts.merge){
+        let base = null; try { base = body && body.json ? JSON.parse(body.json) : null; } catch {}
+        data = base && isTimeline(base) ? mergeInto(base, opts.merge) : normalize(JSON.parse(JSON.stringify(opts.merge)));
+        if (base) toast(T.tMerged);
+        renderTabs(); schedule(); persist(); return;
+      }
+      if (body && body.json && (Number(body.updatedAt)||0) >= (data.updatedAt||0)){ adopt(body, store.uid); setStatus(savedKind()); }
+      else if (data.updatedAt) flush(); else setStatus(savedKind());
+      return;
+    }
+    /* another device or tab saved something newer */
+    if (body && body.json && (Number(body.updatedAt)||0) > (data.updatedAt||0) && !remote.timer && !remote.inflight && !(ptr && ptr.mode) && !editorEl && modal.hidden){
+      adopt(body, store.uid); remote.lastJson = body.json; setStatus(savedKind());
+    }
+  }, () => { if (remote.store === store && !remote.ref){ remote.state = 'off'; setStatus('local'); } });
+}
+
+/* ---------- geometry ---------- */
+const $ = id => document.getElementById(id);
+const board = $('board'), body = $('body'), scroller = $('scroller'), rowsEl = $('rows'), rulerEl = $('ruler'), grid = $('grid');
+const menu = $('menu'), tip = $('tip'), help = $('help'), modal = $('modal');
+let LH = 54;
+const readMetrics = () => { LH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lh')) || 54; };
+const trackW = () => Math.max(50, body.clientWidth);
+const ppd = () => trackW() / view.days;
+const X = day => (day - view.start) * ppd();
+const dayAt = px => view.start + px / ppd();
+const trackLeft = () => body.getBoundingClientRect().left;
+const measure = document.createElement('canvas').getContext('2d');
+const textW = (s, font) => { measure.font = font; return measure.measureText(s).width; };
+const NAME_FONT = '600 12.5px Onest, system-ui, sans-serif', DATE_FONT = '400 11px "JetBrains Mono", ui-monospace, monospace';
+
+/* ---------- render ---------- */
+let raf = 0;
+function schedule(){ if (!raf) raf = requestAnimationFrame(() => { raf = 0; renderBoard(); }); }
+
+function renderTabs(){
+  const el = $('tabs'); el.setAttribute('aria-label', T.tabsAria);
+  el.innerHTML = data.tabs.map(t => `<button class="tab${t.id===data.active?' on':''}" data-tab="${t.id}">${esc(tn(t))}</button>`).join('') +
+    `<button class="tab-add" id="tabAdd" aria-label="${esc(T.newOrCopy)}" title="${esc(T.newOrCopy)}">+</button>`;
+}
+
+function renderRuler(){
+  const p = ppd(), w = trackW(), d0 = Math.floor(view.start) - 1, d1 = Math.ceil(view.start + view.days) + 1;
+  let h = '';
+  for (let y = dd(d0).y; y <= dd(d1).y; y++){
+    const a = X(dn(y,0,1)), b = X(dn(y+1,0,1)), left = Math.max(a,0), right = Math.min(b,w);
+    if (right - left < 34) continue;
+    h += `<span class="ry${b <= X(TODAY) ? ' past' : ''}" style="left:${left}px;width:${right-left}px;${a<0?'border-left-color:transparent':''}">${F.num(y)}</span>`;
+  }
+  const mw = p * 30.44, longW = Math.max(...F.mLong.map(s => textW(s, '12px Onest, system-ui'))) + 12, shortW = Math.max(...F.mShort.map(s => textW(s, '12px Onest, system-ui'))) + 8;
+  const lab = mw >= longW ? m => F.mLong[m] : mw >= shortW ? m => F.mShort[m] : mw >= 13 ? m => F.mInit[m] : null;
+  let {y, m} = dd(d0);
+  for (let i=0; i<200; i++){
+    const a = dn(y,m,1); if (a > d1) break;
+    const xa = X(a), xb = X(dn(y,m+1,1));
+    if (xb > 0) h += `<span class="rm${xb <= X(TODAY) ? ' past' : ''}" style="left:${xa}px;width:${xb-xa}px">${lab ? esc(lab(m)) : ''}</span>`;
+    m++; if (m > 11){ m = 0; y++; }
+  }
+  const tx = X(TODAY + 0.5);
+  if (p >= 9){
+    for (let d=Math.floor(view.start); d<=d1; d++){
+      const day = dd(d).d;
+      if (Math.abs(X(d + 0.5) - tx) < 46) continue;
+      if (p >= 20 || day === 1 || (day % 5 === 0 && day < 30)) h += `<span class="rd" style="left:${X(d)}px;width:${Math.max(p,18)}px">${F.num(day)}</span>`;
+    }
+  }
+  if (tx > -40 && tx < w + 40) h += `<span class="rt" style="left:${tx}px">${esc(T.todayPill)}</span>`;
+  const pastX = clamp(X(TODAY), 0, w);
+  rulerEl.innerHTML = (pastX > 0 ? `<span class="rp" style="width:${pastX}px"></span>` : '') + h;
+}
+
+function drawGrid(){
+  const w = trackW(), hgt = body.clientHeight, dpr = window.devicePixelRatio || 1;
+  if (grid.width !== Math.round(w*dpr) || grid.height !== Math.round(hgt*dpr)){
+    grid.width = Math.round(w*dpr); grid.height = Math.round(hgt*dpr); grid.style.width = w+'px'; grid.style.height = hgt+'px';
+  }
+  const g = grid.getContext('2d'), cs = getComputedStyle(document.documentElement), col = n => cs.getPropertyValue(n).trim();
+  g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,w,hgt);
+  const p = ppd(), d0 = Math.floor(view.start), d1 = Math.ceil(view.start + view.days), tx = X(TODAY);
+  if (tx > 0){ g.fillStyle = col('--past'); g.fillRect(0,0,Math.min(tx,w),hgt); }
+  const line = (xx, c, lw) => { const xs = Math.round(xx) + (lw % 2 ? .5 : 0); g.strokeStyle = c; g.lineWidth = lw; g.beginPath(); g.moveTo(xs,0); g.lineTo(xs,hgt); g.stroke(); };
+  if (p >= 3){ const c = col('--grid-day'); for (let d=d0; d<=d1; d++) if (dd(d).d !== 1) line(X(d), c, 1); }
+  const cm = col('--grid-month'), cy = col('--grid-year');
+  let {y, m} = dd(d0);
+  for (let i=0; i<200; i++){ const a = dn(y,m,1); if (a > d1) break; if (a >= d0) line(X(a), m===0 ? cy : cm, m===0 ? 2 : 1); m++; if (m>11){ m=0; y++; } }
+  const tl = Math.round(X(TODAY + 0.5));
+  if (tl >= -2 && tl <= w + 2){ g.strokeStyle = col('--accent'); g.lineWidth = 2; g.beginPath(); g.moveTo(tl,0); g.lineTo(tl,hgt); g.stroke(); }
+}
+
+/* One period of a task. Name + dates sit inside when they fit; otherwise the name floats just above the bar. */
+function segHtml(item, s, nextX){
+  const w = trackW(), L = X(s.s), R = X(s.e);
+  if (R < -60 || L > w + 60) return '';
+  const W = Math.max(R - L, 4), ps = pieces(s);
+  const extra = (s.e <= TODAY ? ' past' : '') + (linking === s.id ? ' src' : '') + (liftedId === item.id ? ' lifted' : '') + (followIds.has(s.id) ? ' follows' : '');
+  const visL = Math.max(L, 0), vis = Math.min(R, w) - visL, pad = 9;
+  const dates = `${fmtM(s.s)} – ${fmtM(s.e-1)}`;
+  const name = nm(item), nW = textW(name, NAME_FONT), dW = textW(dates, DATE_FONT);
+  let inside = '', above = '';
+  if (vis >= nW + dW + pad*2 + 10) inside = `<b>${esc(name)}</b><em>${esc(dates)}</em>`;
+  else if (vis >= nW + pad*2) inside = `<b>${esc(name)}</b>`;
+  else {
+    const maxW = Math.max(48, (nextX ?? w + 400) - visL - 10);
+    above = `<span class="above${s.e <= TODAY ? ' past' : ''}" data-seg="${s.id}" style="--c:var(--c${item.c%8});left:${visL}px;max-width:${maxW}px">${esc(name)}</span>`;
+  }
+  const title = `${name} · ${fmt(s.s)} – ${fmt(s.e-1)}` + styleText(s);
+  const px = d => clamp(X(d) - L, 0, W);
+  const bodyHtml = ps.map((p,i) => { const a = px(p.a), b = i === ps.length-1 ? W : px(p.b);
+    return `<div class="pc ${p.dash ? 'dash' : 'solid'}${i===0?' first':''}${i===ps.length-1?' last':''}" style="left:${a}px;width:${Math.max(b-a,1)}px"></div>`; }).join('');
+  const marks = s.m.map((d,i) => `<i class="h h-m" data-h="m" data-mi="${i}" style="left:${px(d)}px"></i>`).join('');
+  return above + `<div class="seg${extra}" data-seg="${s.id}" title="${esc(title)}" style="--c:var(--c${item.c%8});left:${L}px;width:${W}px">` +
+    bodyHtml +
+    (inside ? `<span class="txt" style="left:${Math.max(0,-L) + pad}px;max-width:${vis - pad*2}px">${inside}</span>` : '') +
+    `<i class="h h-l" data-h="l"></i><i class="h h-r" data-h="r"></i>` + marks + `</div>`;
+}
+
+function rowHtml(t, r){
+  const vEnd = view.start + view.days;
+  const its = t.items.filter(i => i.row === r);
+  const all = its.flatMap(it => it.segs.map(s => ({it, s}))).sort((a,b) => a.s.s - b.s.s);
+  let h = '';
+  all.forEach((x,i) => { const nxt = all[i+1]; h += segHtml(x.it, x.s, nxt ? X(nxt.s.s) : null); });
+  const leftOut = its.filter(it => it.segs.every(s => s.e <= view.start)).sort((a,b) => b.segs.at(-1).e - a.segs.at(-1).e)[0];
+  const rightOut = its.filter(it => it.segs.every(s => s.s >= vEnd)).sort((a,b) => a.segs[0].s - b.segs[0].s)[0];
+  const chipTitle = it => esc(`${nm(it)}: ${fmtM(it.segs[0].s)} – ${fmtM(it.segs.at(-1).e-1)}`);
+  if (leftOut) h += `<button class="edge el" data-jump="${leftOut.id}" data-dir="l" style="--c:var(--c${leftOut.c%8})" title="${chipTitle(leftOut)}"><i>‹</i><span>${esc(nm(leftOut))}</span></button>`;
+  if (rightOut) h += `<button class="edge er" data-jump="${rightOut.id}" data-dir="r" style="--c:var(--c${rightOut.c%8})" title="${chipTitle(rightOut)}"><span>${esc(nm(rightOut))}</span><i>›</i></button>`;
+  return `<div class="row" data-row="${r}">${h}</div>`;
+}
+
+function linksSvg(t, rows){
+  const w = trackW(), hgt = rows * LH;
+  let paths = '';
+  for (const l of t.links){
+    const A = segById(l.a), B = segById(l.b); if (!A || !B) continue;
+    const x1 = X(A.seg.e), x2 = X(B.seg.s), y1 = A.item.row*LH + BAR_TOP + BAR_H/2, y2 = B.item.row*LH + BAR_TOP + BAR_H/2;
+    if ((x1 < -400 && x2 < -400) || (x1 > w+400 && x2 > w+400)) continue;
+    const bad = B.seg.s < A.seg.e;
+    let d;
+    if (y1 === y2 && x2 - x1 >= 10) d = `M${x1+1} ${y1} H${x2-3}`;
+    else if (y1 !== y2 && x2 - x1 >= 18){ const xm = Math.max(x1 + 8, x2 - 10); d = `M${x1+1} ${y1} H${xm} V${y2} H${x2-3}`; }
+    else { const ym = y1 + (y2 > y1 ? 1 : -1) * LH / 2; d = `M${x1+1} ${y1} H${x1+8} V${ym} H${x2-10} V${y2} H${x2-3}`; }
+    paths += `<path d="${d}" class="${bad?'bad':''}" marker-end="url(#${bad?'mb':'ma'})"></path>`;
+  }
+  return `<svg id="links" width="${w}" height="${hgt}" viewBox="0 0 ${w} ${hgt}" aria-hidden="true"><defs>` +
+    `<marker id="ma" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0 8 4 0 8z"/></marker>` +
+    `<marker id="mb" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="ah-bad" d="M0 0 8 4 0 8z"/></marker>` +
+    `</defs>${paths}</svg>`;
+}
+
+function renderBoard(){
+  readMetrics();
+  const t = tab(), n = rowCount(t);
+  renderRuler(); drawGrid();
+  let h = '';
+  for (let r=0; r<n; r++) h += rowHtml(t, r);
+  h += `<div class="row ghost" data-row="${n}"></div>`;
+  if (!t.items.length) h += `<div class="empty"><strong>${esc(T.emptyTitle)}</strong>${esc(T.emptyText)}</div>`;
+  h += linksSvg(t, n + 1);
+  rowsEl.innerHTML = h;
+  board.classList.toggle('linking', !!linking);
+  document.querySelectorAll('#zoom button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.d - view.days) < 2));
+}
+
+/* ---------- language + theme UI ---------- */
+function effectiveDark(){
+  const root = document.documentElement, ui = root.getAttribute('data-ui'), host = root.getAttribute('data-theme');
+  return ui ? ui === 'dark' : host ? host === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function syncThemeUI(){ const dk = effectiveDark(); $('thLight').classList.toggle('on', !dk); $('thDark').classList.toggle('on', dk); }
+function setTheme(mode){ document.documentElement.setAttribute('data-ui', mode); savePrefs(); syncThemeUI(); schedule(); }
+function applyLang(){
+  T = I18N[lang]; makeFormats();
+  const root = document.documentElement; root.lang = lang; root.dir = lang === 'fa' ? 'rtl' : 'ltr';
+  document.title = T.appName;
+  document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T[el.dataset.t]; });
+  document.querySelectorAll('#zoom button').forEach(b => { b.textContent = T.z[+b.dataset.z]; });
+  $('lang').setAttribute('aria-label', T.langAria); $('zoom').setAttribute('aria-label', T.z.join(' / '));
+  $('thLight').setAttribute('aria-label', T.themeLight); $('thLight').title = T.themeLight;
+  $('thDark').setAttribute('aria-label', T.themeDark); $('thDark').title = T.themeDark;
+  $('dataBtn').setAttribute('aria-label', T.dataAria); $('dataBtn').title = T.dataAria;
+  $('helpBtn').setAttribute('aria-label', T.helpAria); $('helpBtn').title = T.helpAria;
+  $('helpList').innerHTML = T.help.map(([a,b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('');
+  setStatus(statusKind);
+  if (typeof syncAccountUI === 'function') syncAccountUI();
+  renderTabs(); schedule();
+}
+$('lang').innerHTML = LANGS.map(l => `<option value="${l}">${esc(I18N[l].name)}</option>`).join('');
+$('lang').value = lang;
+$('lang').addEventListener('change', e => { lang = e.target.value; prefs.lang = lang; savePrefs(); applyLang(); });
+$('thLight').onclick = () => setTheme('light');
+$('thDark').onclick = () => setTheme('dark');
+
+/* ---------- tabs ---------- */
+function cloneTab(t){
+  const map = {};
+  const items = t.items.map(it => ({id:uid(), k:it.k ?? null, name:it.name, c:it.c, row:it.row, segs:it.segs.map(s => { const n = {...copySeg(s), id:uid()}; map[s.id] = n.id; return n; })}));
+  const out = {id:uid(), items, links:t.links.filter(l => map[l.a] && map[l.b]).map(l => ({a:map[l.a], b:map[l.b]}))};
+  if (t.k){
+    const same = data.tabs.filter(x => x.k === t.k && (x.n || 0) === (t.n || 0)); let v = 2; while (same.some(x => x.v === v)) v++;
+    Object.assign(out, {k:t.k, v}); if (t.n) out.n = t.n; out.name = tn(out);
+  } else { out.k = null; out.name = variantName(t.name); }
+  return out;
+}
+function variantName(base){
+  base = base.replace(/ · [^·]* [\d۰-۹]+$/,''); let n = 2; const names = new Set(data.tabs.map(t => t.name));
+  while (names.has(T.variant(base, n))) n++; return T.variant(base, n);
+}
+function addTab(t){ pushUndo(); data.tabs.push(t); data.active = t.id; linking = null; persist(); renderTabs(); schedule(); requestAnimationFrame(() => { const b = document.querySelector(`[data-tab="${t.id}"]`); b && b.scrollIntoView({inline:'nearest', block:'nearest'}); }); }
+function tabMenu(t, cx, cy){
+  const items = [
+    {label:T.mRename, run:() => renameTab(t.id)},
+    {label:T.mDuplicate, run:() => addTab(cloneTab(t))},
+  ];
+  if (data.tabs.length > 1) items.push('-', {label:T.mDeleteScenario, danger:true, run:() => {
+    pushUndo(); const i = data.tabs.indexOf(t); data.tabs.splice(i,1); if (data.active === t.id) data.active = data.tabs[Math.max(0,i-1)].id;
+    persist(); renderTabs(); schedule(); toast(T.tScenarioDeleted(tn(t)), true);
+  }});
+  openMenu(items, cx, cy, tn(t));
+}
+function renameTab(id){
+  const b = document.querySelector(`[data-tab="${id}"]`); const t = data.tabs.find(x => x.id === id); if (!b || !t) return;
+  b.scrollIntoView({inline:'nearest', block:'nearest'});
+  const r = b.getBoundingClientRect();
+  edit({left:r.left, top:r.top, width:Math.max(r.width+40, 170), height:r.height}, tn(t), v => { pushUndo(); t.name = v; t.k = null; delete t.n; delete t.v; persist(); renderTabs(); });
+}
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-tab]');
+  if (b){ if (data.active !== b.dataset.tab){ data.active = b.dataset.tab; linking = null; hideToast(); lsSet(LS_DATA, JSON.stringify(data)); renderTabs(); schedule(); } return; }
+  const add = e.target.closest('#tabAdd');
+  if (add){
+    const r = add.getBoundingClientRect(), cur = tab();
+    openMenu([
+      {label:T.emptyTimeline, run:() => { const n = data.tabs.length + 1; addTab({id:uid(), k:'scenario', n, name:T.scenarioN(n), items:[], links:[]}); }},
+      {label:T.copyOf(tn(cur)), run:() => addTab(cloneTab(cur))},
+      {label:T.exampleTab, run:() => addTab(sampleTab('exampleTab'))},
+    ], r.left, r.bottom + 4, T.newScenario);
+  }
+});
+$('tabs').addEventListener('dblclick', e => { const b = e.target.closest('[data-tab]'); if (b) renameTab(b.dataset.tab); });
+$('tabs').addEventListener('contextmenu', e => { const b = e.target.closest('[data-tab]'); if (!b) return; e.preventDefault(); tabMenu(data.tabs.find(t => t.id === b.dataset.tab), e.clientX, e.clientY); });
+
+/* ---------- inline editor ---------- */
+let editorEl = null;
+function edit(rect, value, onCommit){
+  closeEditor(false);
+  const inp = document.createElement('input'); inp.className = 'editor'; inp.id = 'inlineEditor'; inp.value = value; inp.maxLength = 120;
+  Object.assign(inp.style, {left:rect.left+'px', top:rect.top+'px', width:rect.width+'px', height:rect.height+'px'});
+  document.body.appendChild(inp); editorEl = {inp, onCommit, value};
+  inp.focus(); inp.select();
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); closeEditor(true); } else if (e.key === 'Escape'){ e.preventDefault(); closeEditor(false); } });
+  inp.addEventListener('blur', () => closeEditor(true));
+}
+function closeEditor(commit){
+  if (!editorEl) return; const {inp, onCommit, value} = editorEl; editorEl = null;
+  const v = inp.value.trim(); inp.remove();
+  if (commit && v && v !== value) onCommit(v);
+}
+function renameItem(itemId, segId){
+  const it = itemById(itemId); if (!it) return;
+  const top = it.row * LH;
+  if (top < scroller.scrollTop || top + LH > scroller.scrollTop + scroller.clientHeight){ scroller.scrollTop = top - LH; }
+  const pick = () => (segId && rowsEl.querySelector(`.seg[data-seg="${segId}"]`)) || it.segs.map(s => rowsEl.querySelector(`.seg[data-seg="${s.id}"]`)).find(Boolean);
+  let el = pick();
+  if (!el){ view.start = it.segs[0].s - view.days * 0.1; renderBoard(); el = pick(); }
+  if (!el) return;
+  const rc = el.getBoundingClientRect(), br = body.getBoundingClientRect();
+  const left = clamp(rc.left, br.left + 4, br.right - 210), width = clamp(Math.min(rc.right, br.right - 4) - left, 210, 320);
+  edit({left, top:rc.top - 4, width, height:rc.height + 8}, nm(it), v => { pushUndo(); it.name = v; it.k = null; persist(); schedule(); });
+}
+
+/* ---------- menu, toast, tip ---------- */
+function openMenu(items, cx, cy, heading){
+  closeEditor(true);
+  menu.innerHTML = (heading ? `<div class="mh">${esc(heading)}</div>` : '') +
+    items.map((it,i) => it === '-' ? '<hr>' : it.head ? `<div class="mh">${esc(it.head)}</div>` :
+      `<button role="menuitem" data-i="${i}" class="${it.danger?'danger':''}"${it.disabled?' disabled':''}>${esc(it.label)}</button>`).join('');
+  menu.hidden = false;
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  menu.style.left = clamp(cx, 8, innerWidth - mw - 8) + 'px';
+  menu.style.top = (cy + mh > innerHeight - 8 ? Math.max(8, cy - mh) : cy) + 'px';
+  menu.onclick = e => { const b = e.target.closest('button[data-i]'); if (!b || b.disabled) return; const it = items[+b.dataset.i]; closeMenu(); it.run(); };
+  const first = menu.querySelector('button:not(:disabled)'); first && first.focus({preventScroll:true});
+}
+function closeMenu(){ menu.hidden = true; menu.onclick = null; }
+document.addEventListener('pointerdown', e => {
+  if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+  if (!help.hidden && !help.contains(e.target) && !e.target.closest('#helpBtn')) help.hidden = true;
+}, true);
+
+let toastEl = null, toastTimer = 0;
+function toast(msg, withUndo){
+  hideToast();
+  toastEl = document.createElement('div'); toastEl.className = 'chip'; toastEl.setAttribute('role','status');
+  toastEl.innerHTML = `<span>${esc(msg)}</span>` + (withUndo ? `<button type="button">${esc(T.undo)}</button>` : '');
+  if (withUndo) toastEl.querySelector('button').onclick = () => { undo(); hideToast(); };
+  board.appendChild(toastEl); toastTimer = setTimeout(hideToast, withUndo ? 6000 : 7000);
+}
+function hideToast(){ clearTimeout(toastTimer); if (toastEl){ toastEl.remove(); toastEl = null; } }
+function showLinkChip(){
+  hideToast();
+  toastEl = document.createElement('div'); toastEl.className = 'chip';
+  toastEl.innerHTML = `<span>${esc(T.linkPick)}</span><button type="button">${esc(T.cancel)}</button>`;
+  toastEl.querySelector('button').onclick = () => { linking = null; hideToast(); schedule(); };
+  board.appendChild(toastEl);
+}
+function showTip(s, cx, cy, markDay, deps){
+  tip.textContent = (markDay != null ? T.tipStyleFrom(fmt(markDay)) : `${fmt(s.s)} → ${fmt(s.e-1)} · ${daysText(s.e - s.s)}`) + (deps ? T.withDeps(F.num(deps)) : '');
+  tip.hidden = false;
+  const w = tip.offsetWidth;
+  tip.style.left = clamp(cx - w/2, 8, innerWidth - w - 8) + 'px';
+  tip.style.top = Math.max(8, cy - 44) + 'px';
+}
+
+/* ---------- operations ---------- */
+let linking = null, liftedId = null, followIds = new Set();
+const newSegLen = () => Math.max(21, Math.round(140 / ppd()));
+const gapLen = () => Math.max(14, Math.round(view.days / 12));
+function pickColor(){
+  const used = Array(8).fill(0); tab().items.forEach(i => used[((i.c%8)+8)%8]++);
+  return used.indexOf(Math.min(...used));
+}
+function addTask(row, day){
+  const t = tab(), n = rowCount(t);
+  row = clamp(row ?? n, 0, n);
+  const s = Math.floor(day ?? TODAY); let e = s + newSegLen();
+  const next = t.items.filter(i => i.row === row).flatMap(i => i.segs).filter(x => x.s >= s).sort((a,b) => a.s - b.s)[0];
+  if (next && next.s < e && next.s - s >= 5) e = next.s;
+  pushUndo();
+  const item = {id:uid(), k:'newTask', name:T.newTask, c:pickColor(), row, segs:[{id:uid(), s, e, m:[], d:false}]};
+  t.items.push(item); settle(item); persist(); renderBoard();
+  requestAnimationFrame(() => renameItem(item.id));
+}
+function addPeriod(item){
+  const last = item.segs.at(-1), s = last.e + gapLen(), e = s + Math.max(30, newSegLen());
+  pushUndo(); item.segs.push({id:uid(), s, e, m:[], d:false}); settle(item); ensureVisible({s, e}); persist(); schedule();
+}
+function deleteItem(item){
+  pushUndo(); const t = tab(), ids = new Set(item.segs.map(s => s.id));
+  t.items = t.items.filter(i => i !== item); t.links = t.links.filter(l => !ids.has(l.a) && !ids.has(l.b)); compact(t);
+  persist(); schedule(); toast(T.tTaskDeleted(nm(item)), true);
+}
+function deleteSeg(item, seg){
+  if (item.segs.length === 1) return deleteItem(item);
+  pushUndo(); item.segs = item.segs.filter(s => s !== seg); tab().links = tab().links.filter(l => l.a !== seg.id && l.b !== seg.id);
+  persist(); schedule(); toast(T.tPeriodDeleted, true);
+}
+function splitSeg(item, seg, day){
+  const cut = Math.round(day); if (cut <= seg.s || cut >= seg.e) return;
+  const gap = gapLen();
+  pushUndo();
+  const ps = pieces(seg);
+  const second = {id:uid(), s:cut + gap, e:seg.e + gap, m:[], d:false};
+  setPieces(second, ps.filter(p => p.b > cut).map(p => ({a:Math.max(p.a, cut) + gap, b:p.b + gap, dash:p.dash})));
+  setPieces(seg, ps.filter(p => p.a < cut).map(p => ({a:p.a, b:Math.min(p.b, cut), dash:p.dash}))); seg.e = cut; fixMarks(seg);
+  tab().links.forEach(l => { if (l.a === seg.id) l.a = second.id; });
+  item.segs.push(second); item.segs.sort((a,b) => a.s - b.s);
+  const fs = followers([second.id]).filter(f => f.item !== item);
+  fs.forEach(f => shiftSeg(f.seg, copySeg(f.seg), gap));
+  settle(item, ...fs.map(f => f.item));
+  persist(); schedule(); toast(T.tBreakAdded, true);
+}
+function ensureVisible(s){ if (X(s.e) < 0 || X(s.s) > trackW()) view.start = s.s - view.days * 0.15; }
+function jumpTo(item, dir){
+  if (dir === 'l') view.start = item.segs.at(-1).e - view.days * 0.75;
+  else view.start = item.segs[0].s - view.days * 0.2;
+  schedule();
+}
+
+/* ---------- dates dialog ---------- */
+let dlgTarget = null;
+const fStart = $('fStart'), fEnd = $('fEnd'), fPieces = $('fPieces'), fErr = $('fErr');
+const styleSelect = (dash, i) => `<select id="fStyle${i}" aria-label="${esc(T.lineLook)}"><option value="0"${dash?'':' selected'}>${esc(T.solid)}</option><option value="1"${dash?' selected':''}>${esc(T.dashed)}</option></select>`;
+function pieceRow(i, at, dash){
+  return `<div class="pr">` + (i === 0 ? `<span class="from">${esc(T.fromStart)}</span>` : `<input type="date" id="fAt${i}" value="${iso(at)}" aria-label="${esc(T.styleDateAria)}">`) +
+    styleSelect(dash, i) + (i === 0 ? '<span></span>' : `<button type="button" class="rm" aria-label="${esc(T.removeStyleAria)}">×</button>`) + `</div>`;
+}
+let pieceSeq = 0;
+function openDates(item, seg){
+  dlgTarget = {item, seg};
+  $('dlgName').textContent = nm(item);
+  fStart.value = iso(seg.s); fEnd.value = iso(seg.e - 1);
+  pieceSeq = 0; fPieces.innerHTML = pieces(seg).map(p => pieceRow(pieceSeq++, p.a, p.dash)).join('');
+  fErr.hidden = true; modal.hidden = false; fStart.focus();
+}
+function closeDates(){ modal.hidden = true; dlgTarget = null; }
+$('fCancel').onclick = closeDates;
+modal.addEventListener('pointerdown', e => { if (e.target === modal) closeDates(); });
+fPieces.addEventListener('click', e => { const b = e.target.closest('.rm'); if (b) b.closest('.pr').remove(); });
+$('fAddPiece').onclick = () => {
+  const rows = [...fPieces.querySelectorAll('.pr')], s = fromIso(fStart.value) ?? dlgTarget.seg.s, e = (fromIso(fEnd.value) ?? dlgTarget.seg.e - 1) + 1;
+  const lastRow = rows[rows.length-1], lastAt = rows.length > 1 ? (fromIso(lastRow.querySelector('input').value) ?? s) : s;
+  const lastDash = lastRow.querySelector('select').value === '1';
+  const at = Math.max(lastAt + 1, Math.round((lastAt + e) / 2));
+  fPieces.insertAdjacentHTML('beforeend', pieceRow(pieceSeq++, Math.min(at, e - 1), !lastDash));
+};
+function readPieces(s, e){
+  const rows = [...fPieces.querySelectorAll('.pr')].map((r,i) => ({at: i === 0 ? s : fromIso(r.querySelector('input').value), dash: r.querySelector('select').value === '1'}));
+  if (rows.slice(1).some(r => r.at === null || r.at <= s || r.at >= e)) return null;
+  rows.sort((a,b) => a.at - b.at);
+  return rows.map((r,i) => ({a:r.at, b: i < rows.length-1 ? rows[i+1].at : e, dash:r.dash}));
+}
+$('datesForm').addEventListener('submit', e => {
+  e.preventDefault(); if (!dlgTarget) return;
+  const s = fromIso(fStart.value), last = fromIso(fEnd.value);
+  const err = m => { fErr.textContent = m; fErr.hidden = false; };
+  if (s === null || last === null) return err(T.errDates);
+  if (last < s) return err(T.errOrder);
+  const list = readPieces(s, last + 1);
+  if (!list) return err(T.errStyle);
+  pushUndo();
+  const {seg, item} = dlgTarget, oldE = seg.e;
+  seg.s = s; seg.e = last + 1; setPieces(seg, list); fixMarks(seg);
+  item.segs.sort((a,b) => a.s - b.s);
+  const moved = shiftFollowers([seg.id], seg.e - oldE);
+  settle(item, ...moved);
+  closeDates(); ensureVisible(seg); persist(); schedule();
+});
+
+/* ---------- data: files and automatic copies ---------- */
+function exportData(){
+  saveFile(`obrii-${iso(TODAY)}.json`, JSON.stringify({app:'obrii', version:2, exportedAt:new Date().toISOString(), data}, null, 1));
+}
+function restoreFrom(parsed, msg){
+  const d = parsed && parsed.data && parsed.data.tabs ? parsed.data : parsed;
+  if (!isTimeline(d)){ toast(T.tBadFile); return; }
+  pushUndo(); data = normalize(JSON.parse(JSON.stringify(d))); persist(); renderTabs(); schedule(); toast(msg, true);
+}
+$('importFile').addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0]; e.target.value = ''; if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { try { restoreFrom(JSON.parse(String(r.result)), T.tImported); } catch { toast(T.tBadFile); } };
+  r.readAsText(file);
+});
+async function loadBackups(){
+  const store = remote.store; if (!store) return [];
+  const docs = await Promise.all([...Array(7)].map((_,i) => store.doc(`backup-${i}`).get().catch(() => null)));
+  return docs.filter(s => s && s.exists).map(s => s.data()).filter(b => b && b.json).sort((a,b) => (b.savedAt||0) - (a.savedAt||0));
+}
+$('dataBtn').onclick = async () => {
+  const r = $('dataBtn').getBoundingClientRect();
+  const backups = await loadBackups().catch(() => []);
+  const items = [
+    {label:T.dExport, run:exportData},
+    {label:T.dImport, run:() => $('importFile').click()},
+  ];
+  if (remote.store){
+    items.push('-', {head:T.dAutoHead});
+    if (!backups.length) items.push({label:T.dNoAuto, disabled:true, run(){}});
+    backups.forEach(b => { const day = Number(b.day); items.push({label:T.dAuto(fmt(day)), run:() => { try { restoreFrom(JSON.parse(b.json), T.tAutoRestored(fmt(day))); } catch { toast(T.tBadFile); } }}); });
+  }
+  openMenu(items, Math.min(r.left, innerWidth - 250), r.bottom + 4);
+};
+
+/* ---------- context menus ---------- */
+function segMenu(info, cx, cy){
+  const f = segById(info.segId); if (!f) return;
+  const {seg, item} = f, day = dayAt(info.px), t = tab();
+  const items = [{label:T.mDates, run:() => openDates(item, seg)}];
+  const ps = pieces(seg), dayR = Math.round(day);
+  const pi = Math.max(0, ps.findIndex(p => day >= p.a && day < p.b)), piece = ps[pi];
+  const restyle = fn => () => {
+    pushUndo(); const oldE = seg.e, list = pieces(seg); fn(list); setPieces(seg, list); fixMarks(seg);
+    const moved = shiftFollowers([seg.id], seg.e - oldE); settle(item, ...moved); persist(); schedule();
+  };
+  const extend = dash => restyle(list => { const len = Math.max(30, Math.round(view.days/5)); list.push({a:seg.e, b:seg.e + len, dash}); seg.e += len; });
+  items.push('-', {label:T.mExtDash, run:extend(true)}, {label:T.mExtSolid, run:extend(false)});
+  if (dayR > piece.a && dayR < piece.b)
+    items.push({label:piece.dash ? T.mSolidFrom(fmt(dayR)) : T.mDashFrom(fmt(dayR)), run:restyle(list => { const p = list[pi]; list.splice(pi, 1, {a:p.a, b:dayR, dash:p.dash}, {a:dayR, b:p.b, dash:!p.dash}); })});
+  if (ps.length > 1) items.push({label:piece.dash ? T.mPieceSolid : T.mPieceDash, run:restyle(list => { list[pi].dash = !list[pi].dash; })});
+  if (ps.some(p => p.dash)) items.push({label:T.mAllSolid, run:restyle(list => { list.splice(0, list.length, {a:seg.s, b:seg.e, dash:false}); })});
+  if (ps.some(p => !p.dash)) items.push({label:T.mAllDash, run:restyle(list => { list.splice(0, list.length, {a:seg.s, b:seg.e, dash:true}); })});
+  items.push('-');
+  if (day > seg.s + 2 && day < seg.e - 2) items.push({label:T.mBreak(fmt(dayR)), run:() => splitSeg(item, seg, day)});
+  items.push({label:T.mAddPeriod, run:() => addPeriod(item)});
+  items.push('-', {label:T.mLink, run:() => { linking = seg.id; showLinkChip(); schedule(); }});
+  if (t.links.some(l => l.a === seg.id || l.b === seg.id)) items.push({label:T.mUnlink, run:() => { pushUndo(); t.links = t.links.filter(l => l.a !== seg.id && l.b !== seg.id); persist(); schedule(); }});
+  items.push('-', {label:T.mRename, run:() => renameItem(item.id, seg.id)});
+  if (item.segs.length > 1) items.push({label:T.mDelPeriod, danger:true, run:() => deleteSeg(item, seg)});
+  items.push({label:T.mDelTask, danger:true, run:() => deleteItem(item)});
+  openMenu(items, cx, cy, `${nm(item)} · ${fmtM(seg.s)} – ${fmtM(seg.e-1)}`);
+}
+function contextFor(info, cx, cy){
+  if (info.kind === 'seg') segMenu(info, cx, cy);
+  else if (info.kind === 'row' || info.kind === 'empty'){
+    const day = dayAt(info.px);
+    openMenu([{label:T.mNewTaskFrom(fmt(Math.floor(day))), run:() => addTask(info.row, day)}], cx, cy);
+  }
+}
+
+/* ---------- pointer interaction ---------- */
+function hit(e){
+  const t = e.target, px = e.clientX - trackLeft();
+  if (t.closest('.ruler')) return {kind:'ruler', px};
+  const segEl = t.closest('[data-seg]');
+  if (segEl) return {kind:'seg', segId:segEl.dataset.seg, h:t.dataset.h || null, mi:t.dataset.mi != null ? +t.dataset.mi : null, px};
+  const rowEl = t.closest('[data-row]');
+  if (rowEl) return {kind:'row', row:+rowEl.dataset.row, px};
+  return {kind:'empty', row:rowCount(tab()), px};
+}
+let ptr = null, pinch = null, lastTap = null;
+const pointers = new Map();
+
+board.addEventListener('pointerdown', e => {
+  if (e.target.closest('button, input, .chip')) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (pointers.size === 2){ endPtr(false); const [a,b] = [...pointers.values()]; pinch = {d0:Math.hypot(a.x-b.x, a.y-b.y), days0:view.days, cx:(a.x+b.x)/2}; return; }
+  if (pointers.size > 2) return;
+  closeEditor(true);
+  const info = hit(e);
+  ptr = {id:e.pointerId, x0:e.clientX, y0:e.clientY, info, mode:null, touch:e.pointerType !== 'mouse', shift:e.shiftKey, alone:e.altKey};
+  try { board.setPointerCapture(e.pointerId); } catch {}
+  if (ptr.touch) ptr.lp = setTimeout(() => { if (ptr && !ptr.mode){ ptr.cancelled = true; contextFor(info, ptr.x0, ptr.y0); } }, 520);
+});
+board.addEventListener('pointermove', e => {
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (pinch && pointers.size === 2){
+    const [a,b] = [...pointers.values()], d = Math.hypot(a.x-b.x, a.y-b.y); if (d < 10) return;
+    const px = pinch.cx - trackLeft(), under = dayAt(px);
+    view.days = clamp(pinch.days0 * pinch.d0 / d, MIN_DAYS, MAX_DAYS); view.start = under - px / ppd(); schedule(); return;
+  }
+  if (!ptr || ptr.id !== e.pointerId || ptr.cancelled) return;
+  const dx = e.clientX - ptr.x0, dy = e.clientY - ptr.y0;
+  if (!ptr.mode){
+    if (Math.hypot(dx,dy) < (ptr.touch ? 9 : 5)) return;
+    clearTimeout(ptr.lp); beginDrag(dx, dy);
+  }
+  applyDrag(e, dx, dy);
+});
+function beginDrag(dx, dy){
+  const i = ptr.info, f = i.kind === 'seg' && !linking ? segById(i.segId) : null;
+  if (f){
+    ptr.mode = i.h || 'move'; ptr.mi = i.mi; ptr.seg = f.seg; ptr.item = f.item;
+    ptr.o = copySeg(f.seg); ptr.os = f.item.segs.map(copySeg);
+    ptr.row0 = f.item.row; ptr.maxRow = rowCount(tab()); ptr.vlock = Math.abs(dy) > Math.abs(dx) * 1.5;
+    ptr.deps = [];
+    if (!ptr.alone && (ptr.mode === 'move' || ptr.mode === 'r')){
+      const own = ptr.mode === 'move' && ptr.shift ? f.item.segs.map(s => s.id) : [f.seg.id];
+      ptr.deps = followers(own).filter(x => !own.includes(x.seg.id)).map(x => ({f:x, o:copySeg(x.seg)}));
+      followIds = new Set(ptr.deps.map(x => x.f.seg.id));
+    }
+    pushUndo(); if (ptr.mode === 'move') liftedId = f.item.id;
+  } else {
+    ptr.mode = 'pan'; ptr.o = {start:view.start, top:scroller.scrollTop};
+  }
+  board.style.cursor = ptr.mode === 'pan' || ptr.mode === 'move' ? 'grabbing' : 'ew-resize';
+}
+function applyDrag(e, dx, dy){
+  const p = ppd(), dDays = Math.round(dx / p), m = ptr.mode;
+  if (m === 'pan'){
+    view.start = ptr.o.start - dx / p;
+    if (ptr.info.kind !== 'ruler') scroller.scrollTop = ptr.o.top - dy;
+    schedule(); return;
+  }
+  const s = ptr.seg, o = ptr.o;
+  let delta = 0;
+  if (m === 'move'){
+    const rect = scroller.getBoundingClientRect();
+    if (e.clientY < rect.top + 20) scroller.scrollTop -= 8; else if (e.clientY > rect.bottom - 20) scroller.scrollTop += 8;
+    ptr.item.row = clamp(ptr.row0 + Math.round(dy / LH), 0, ptr.maxRow);
+    if (!ptr.vlock){
+      if (ptr.shift) ptr.item.segs.forEach((x,i) => shiftSeg(x, ptr.os[i], dDays));
+      else shiftSeg(s, o, dDays);
+      delta = dDays;
+    }
+  }
+  else if (m === 'l'){ s.s = Math.min(o.s + dDays, o.e - 1); s.e = o.e; s.m = [...o.m]; s.d = o.d; fixMarks(s); }
+  else if (m === 'r'){ s.e = Math.max(o.e + dDays, o.s + 1); s.s = o.s; s.m = [...o.m]; s.d = o.d; fixMarks(s); delta = s.e - o.e; }
+  else if (m === 'm'){
+    const i = ptr.mi, lo = i > 0 ? o.m[i-1] : o.s, hi = i < o.m.length - 1 ? o.m[i+1] : o.e;
+    const nv = clamp(o.m[i] + dDays, lo, hi);
+    s.m = [...o.m]; s.m[i] = nv; s.d = o.d; fixMarks(s);
+    showTip(s, e.clientX, e.clientY, nv); schedule(); return;
+  }
+  (ptr.deps || []).forEach(x => shiftSeg(x.f.seg, x.o, delta));
+  showTip(s, e.clientX, e.clientY, null, delta ? (ptr.deps || []).length : 0);
+  schedule();
+}
+function endPtr(isUp, e){
+  if (!ptr) return;
+  const p = ptr; ptr = null; clearTimeout(p.lp);
+  tip.hidden = true; board.style.cursor = ''; liftedId = null; followIds = new Set();
+  if (p.cancelled) return;
+  if (p.mode){
+    if (p.mode === 'pan'){ savePrefs(); return; }
+    const same = p.item.row === p.row0 && p.item.segs.every((x,i) => x.s === p.os[i].s && x.e === p.os[i].e && x.d === p.os[i].d && x.m.join() === p.os[i].m.join());
+    if (same) undoStack.pop();
+    else { p.item.segs.sort((a,b) => a.s - b.s); settle(p.item, ...(p.deps || []).map(x => x.f.item)); persist(); }
+    schedule(); return;
+  }
+  if (isUp && e) tap(p, e);
+}
+board.addEventListener('pointerup', e => {
+  pointers.delete(e.pointerId);
+  if (pinch){ if (pointers.size < 2){ pinch = null; savePrefs(); } return; }
+  if (ptr && ptr.id === e.pointerId) endPtr(true, e);
+});
+board.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null; if (ptr && ptr.id === e.pointerId) endPtr(false); });
+
+function tap(p, e){
+  const i = p.info, now = performance.now();
+  const key = i.kind + ':' + (i.segId ?? i.row ?? '');
+  const isDouble = lastTap && now - lastTap.t < 380 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 14 && lastTap.key === key;
+  lastTap = isDouble ? null : {t:now, x:e.clientX, y:e.clientY, key};
+  if (linking){
+    if (i.kind === 'seg' && i.segId !== linking){
+      const t = tab();
+      if (!t.links.some(l => l.a === linking && l.b === i.segId)){ pushUndo(); t.links.push({a:linking, b:i.segId}); persist(); }
+      linking = null; hideToast(); lastTap = null; schedule();
+    } else if (i.kind !== 'seg'){ linking = null; hideToast(); schedule(); }
+    return;
+  }
+  if (!isDouble) return;
+  if (i.kind === 'seg'){ const f = segById(i.segId); f && renameItem(f.item.id, i.segId); }
+  else if (i.kind === 'row' || i.kind === 'empty') addTask(i.row, dayAt(i.px));
+}
+board.addEventListener('contextmenu', e => {
+  if (e.target.closest('input, .chip, button')) return;
+  e.preventDefault();
+  if (ptr){ ptr.cancelled = true; clearTimeout(ptr.lp); }
+  contextFor(hit(e), e.clientX, e.clientY);
+});
+let wheelSave = 0;
+board.addEventListener('wheel', e => {
+  if (e.ctrlKey || e.metaKey){
+    e.preventDefault(); const px = e.clientX - trackLeft(), under = dayAt(px);
+    view.days = clamp(view.days * Math.exp(e.deltaY * 0.0045), MIN_DAYS, MAX_DAYS); view.start = under - px / ppd();
+    schedule(); clearTimeout(wheelSave); wheelSave = setTimeout(savePrefs, 400); return;
+  }
+  const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+  let dx = e.deltaX * unit, dy = e.deltaY * unit;
+  const canScrollY = scroller.scrollHeight > scroller.clientHeight + 1;
+  if (!dx && (e.shiftKey || !canScrollY || e.target.closest('.ruler'))){ dx = dy; dy = 0; }
+  if (dx && Math.abs(dx) >= Math.abs(dy)){ e.preventDefault(); view.start += dx / ppd(); schedule(); }
+}, {passive:false});
+rowsEl.addEventListener('click', e => {
+  const j = e.target.closest('[data-jump]'); if (!j) return;
+  const it = itemById(j.dataset.jump); it && jumpTo(it, j.dataset.dir);
+});
+
+/* ---------- toolbar ---------- */
+$('addBtn').onclick = () => { addTask(rowCount(tab()), TODAY); requestAnimationFrame(() => { scroller.scrollTop = scroller.scrollHeight; }); };
+$('zoom').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const center = view.start + view.days / 2;
+  view.days = +b.dataset.d; view.start = center - view.days / 2; savePrefs(); schedule();
+});
+$('todayBtn').onclick = () => { view.start = TODAY - view.days / 2; schedule(); };
+$('helpBtn').onclick = () => {
+  if (!help.hidden){ help.hidden = true; return; }
+  help.hidden = false; const r = $('helpBtn').getBoundingClientRect();
+  help.style.left = clamp(r.right - help.offsetWidth, 8, innerWidth - help.offsetWidth - 8) + 'px'; help.style.top = (r.bottom + 8) + 'px';
+};
+const mq = matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener && mq.addEventListener('change', () => { syncThemeUI(); schedule(); });
+document.addEventListener('keydown', e => {
+  if (e.target && e.target.closest && e.target.closest('input, select')) return;
+  if (e.key === 'Escape'){ closeMenu(); help.hidden = true; if (!modal.hidden) closeDates(); if (linking){ linking = null; hideToast(); schedule(); } }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z'){ e.preventDefault(); undo(); }
+});
+new ResizeObserver(() => schedule()).observe(body);
+new MutationObserver(() => { syncThemeUI(); schedule(); }).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme','data-ui']});
+scroller.addEventListener('scroll', () => { if (!menu.hidden) closeMenu(); });
+
+/* ---------- backend: Firebase (github.io) ---------- */
+function saveFile(filename, text){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type:'application/json'})); a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  toast(T.tExported);
+}
+const cloudReady = new Promise(res => {
+  if (window.obriiCloud) res(window.obriiCloud);
+  else window.addEventListener('obrii-cloud', () => res(window.obriiCloud), {once:true});
+});
+let pendingMerge = null;
+const acctBtn = $('acctBtn');
+
+function syncAccountUI(){
+  if (!account){ acctBtn.hidden = true; return; }
+  acctBtn.hidden = false;
+  if (account.anonymous){
+    acctBtn.className = 'btn acct guest';
+    acctBtn.innerHTML = `<span>${esc(T.signIn)}</span>`;
+    acctBtn.title = T.stDeviceTitle;
+  } else {
+    const label = account.email || account.name || '';
+    acctBtn.className = 'btn acct';
+    acctBtn.innerHTML = `<i class="av">${esc(([...label][0] || '•').toUpperCase())}</i><span>${esc(label)}</span>`;
+    acctBtn.title = T.signedInAs(label);
+  }
+  acctBtn.setAttribute('aria-label', T.acctAria);
+  if (statusKind === 'saved' || statusKind === 'device') setStatus(savedKind());
+}
+/* Keep what a guest already planned, so signing in never loses it. */
+function prepareMerge(){
+  pendingMerge = (account && account.anonymous && data.updatedAt > 0) ? JSON.parse(JSON.stringify(data)) : null;
+}
+function accountMenu(){
+  const r = acctBtn.getBoundingClientRect();
+  cloudReady.then(cloud => {
+    if (!account || account.anonymous){
+      openMenu([
+        {label:T.signInGoogle, run:async () => { prepareMerge(); try { await cloud.signInGoogle(); } catch (e) { pendingMerge = null; if (!/cancel|closed/i.test(String(e && e.code))) toast(T.signInFailed); } }},
+        {label:T.signInEmail, run:() => openEmail('send')},
+      ], Math.min(r.left, innerWidth - 260), r.bottom + 4, T.signInWhy);
+    } else {
+      openMenu([
+        {label:T.signOut, run:async () => {
+          disconnect(); data = normalize(null); lsSet(LS_DATA, ''); renderTabs(); schedule(); setStatus('pending');
+          try { await cloud.signOut(); } catch {}
+        }},
+      ], Math.min(r.left, innerWidth - 260), r.bottom + 4, T.signedInAs(account.email || account.name || ''));
+    }
+  });
+}
+acctBtn.onclick = accountMenu;
+statusEl.addEventListener('click', () => { if (statusKind === 'device') accountMenu(); });
+
+/* email link: 'send' asks for the address; 'confirm' is shown when the link is opened on another device */
+const emailModal = $('emailModal'), emailInput = $('emailInput'), emailErr = $('emailErr');
+let emailMode = 'send';
+function openEmail(mode){
+  emailMode = mode;
+  $('emailTitle').textContent = mode === 'send' ? T.signInEmail : T.emailConfirm;
+  $('emailSub').textContent = mode === 'send' ? T.signInWhy : '';
+  $('emailSubmit').textContent = mode === 'send' ? T.emailSend : T.signIn;
+  emailErr.hidden = true; emailModal.hidden = false; emailInput.value = lsGet('obrii-email') || ''; emailInput.focus();
+}
+const closeEmail = () => { emailModal.hidden = true; if (emailMode === 'confirm') cloudReady.then(c => c.ensureGuest()); };
+$('emailCancel').onclick = closeEmail;
+emailModal.addEventListener('pointerdown', e => { if (e.target === emailModal) closeEmail(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !emailModal.hidden) closeEmail(); });
+async function finishLink(cloud, email){
+  prepareMerge();
+  try { await cloud.completeLink(email); }
+  catch { pendingMerge = null; toast(T.signInFailed); cloud.ensureGuest(); }
+}
+$('emailForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = emailInput.value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ emailErr.textContent = T.emailLabel; emailErr.hidden = false; return; }
+  const cloud = await cloudReady;
+  if (emailMode === 'send'){
+    try { await cloud.sendLink(email); lsSet('obrii-email', email); closeEmail(); toast(T.emailSent(email)); }
+    catch { emailErr.textContent = T.signInFailed; emailErr.hidden = false; }
+  } else { emailModal.hidden = true; finishLink(cloud, email); }
+});
+
+/* anonymous visit statistics: asked first in Europe, on by default elsewhere */
+function setupConsent(cloud){
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  const ask = tz.startsWith('Europe/');
+  if (prefs.stats === 'yes' || (!ask && prefs.stats !== 'no')){ cloud.analytics(); return; }
+  if (prefs.stats === 'no') return;
+  const bar = $('consent'); bar.hidden = false;
+  $('consentYes').onclick = () => { prefs.stats = 'yes'; savePrefs(); bar.hidden = true; cloud.analytics(); };
+  $('consentNo').onclick = () => { prefs.stats = 'no'; savePrefs(); bar.hidden = true; };
+}
+cloudReady.then(cloud => {
+  cloud.onUser(u => {
+    const prev = account; account = u; syncAccountUI();
+    if (remote.store && remote.store.uid === u.uid) return;
+    const merge = (prev && prev.anonymous && prev.uid !== u.uid) ? pendingMerge : null;
+    pendingMerge = null;
+    connect(cloud.storeFor(u.uid), {merge});
+  });
+  if (cloud.hasLink()){ const email = lsGet('obrii-email'); if (email) finishLink(cloud, email); else openEmail('confirm'); }
+  setupConsent(cloud);
+}).catch(() => { remote.state = 'off'; setStatus('local'); });
+
+applyLang(); syncThemeUI(); renderBoard();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+})();
+</script>
+
+<script type="module">
+/* Firebase bridge for Обрій on github.io: guest start, Google or email-link sign-in, per-person Firestore storage. */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInAnonymously, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+         sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCzlHpRH0CfRqramzzobFnu7sOFCcmc9fA",
+  authDomain: "horizon-a35f8.firebaseapp.com",
+  projectId: "horizon-a35f8",
+  storageBucket: "horizon-a35f8.firebasestorage.app",
+  messagingSenderId: "815112613572",
+  appId: "1:815112613572:web:801e9d0ce18198b7c5e391",
+  measurementId: "G-WBSVGSSRHB"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+let db;
+try { db = initializeFirestore(app, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})}); }
+catch { db = initializeFirestore(app, {}); }
+
+const listeners = [];
+let current = null, analyticsOn = false;
+const linkInUrl = () => isSignInWithEmailLink(auth, location.href);
+const ensureGuest = () => { if (!auth.currentUser) signInAnonymously(auth).catch(() => {}); };
+
+onAuthStateChanged(auth, u => {
+  if (!u){ if (!linkInUrl()) ensureGuest(); return; }
+  current = {uid:u.uid, anonymous:u.isAnonymous, email:u.email || '', name:u.displayName || ''};
+  listeners.forEach(f => f(current));
+});
+
+const wrapSnap = s => ({exists:s.exists(), data:() => s.data()});
+
+window.obriiCloud = {
+  onUser(fn){ listeners.push(fn); if (current) fn(current); },
+  storeFor(uid){
+    return { uid, doc(name){
+      const r = doc(db, 'users', uid, 'obrii', name);
+      return {
+        get: async () => wrapSnap(await getDoc(r)),
+        set: obj => setDoc(r, obj),
+        onSnapshot: (next, err) => onSnapshot(r, s => next(wrapSnap(s)), e => err && err(e)),
+      };
+    } };
+  },
+  async signInGoogle(){
+    const provider = new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+    try { await signInWithPopup(auth, provider); }
+    catch (e) { if (e && e.code === 'auth/popup-blocked') await signInWithRedirect(auth, provider); else throw e; }
+  },
+  async sendLink(email){
+    await sendSignInLinkToEmail(auth, email, {url: location.origin + location.pathname, handleCodeInApp: true});
+  },
+  hasLink: linkInUrl,
+  async completeLink(email){
+    await signInWithEmailLink(auth, email, location.href);
+    history.replaceState(null, '', location.origin + location.pathname);
+  },
+  ensureGuest,
+  async signOut(){ await signOut(auth); },
+  async analytics(){
+    if (analyticsOn) return; analyticsOn = true;
+    try {
+      const { getAnalytics, isSupported } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js');
+      if (await isSupported()) getAnalytics(app);
+    } catch {}
+  },
+};
+window.dispatchEvent(new Event('obrii-cloud'));
+</script>
+</body>
+</html>
